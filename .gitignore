@@ -1,0 +1,11 @@
+# OS / System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+.qodo/
+
+# Environment / Config overrides
+*.log
