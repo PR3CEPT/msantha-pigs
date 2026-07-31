@@ -1,0 +1,25 @@
+{
+  "name": "Msantha Pigs & Livestock Management System",
+  "short_name": "Msantha Pigs",
+  "description": "Comprehensive Management System for Livestock, Breeding, Sales, and Veterinary Services at MIGS.",
+  "start_url": "dashboard.php",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F4F7F6",
+  "theme_color": "#2E7D32",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
