@@ -21,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
             $hash = password_hash($password, PASSWORD_DEFAULT);
             $stmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, phone) VALUES (?, ?, ?, ?, ?)");
             $stmt->execute([$username, $hash, $role, $full_name, $phone]);
+            logActivity($pdo, 'user_created', "Created new system user account '$username' ('$full_name') with role '" . ucfirst($role) . "'");
             $pdo->commit();
             $msg = "New system user '$username' created successfully!";
         } catch (PDOException $e) {
@@ -47,9 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
                 $hash = password_hash($password, PASSWORD_DEFAULT);
                 $stmt = $pdo->prepare("UPDATE users SET full_name = ?, role = ?, phone = ?, password = ? WHERE id = ?");
                 $stmt->execute([$full_name, $role, $phone, $hash, $targetId]);
+                logActivity($pdo, 'user_updated', "Updated user account '$full_name' (ID #$targetId) details and reset password");
             } else {
                 $stmt = $pdo->prepare("UPDATE users SET full_name = ?, role = ?, phone = ? WHERE id = ?");
                 $stmt->execute([$full_name, $role, $phone, $targetId]);
+                logActivity($pdo, 'user_updated', "Updated user account '$full_name' (ID #$targetId) details");
             }
             $pdo->commit();
             $msg = "User account updated successfully!";

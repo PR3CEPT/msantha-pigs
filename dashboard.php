@@ -9,9 +9,19 @@ $females = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Female' AND statu
 $weaners = $pdo->query("SELECT COUNT(*) FROM pigs WHERE stage IN ('weaner', 'piglet') AND status = 'active'")->fetchColumn();
 $pregnant = $pdo->query("SELECT COUNT(*) FROM breeding_records WHERE status = 'pregnant'")->fetchColumn();
 
+// Male Castration Breakdown
+$intactBoars = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND (castrated = 0 OR castrated IS NULL) AND status = 'active'")->fetchColumn();
+$castratedBarrows = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND castrated = 1 AND status = 'active'")->fetchColumn();
+
+// Fetch Maternity Watch (Pregnant Sows & Expected Farrowing Countdowns)
+$maternityWatch = $pdo->query("SELECT b.*, p.tag_no, p.breed, p.id as pig_id FROM breeding_records b JOIN pigs p ON b.pig_id = p.id WHERE b.status = 'pregnant' ORDER BY b.expected_farrowing ASC LIMIT 10")->fetchAll();
+
 // Fetch Recent Sales & Activity
 $recentSales = $pdo->query("SELECT * FROM sales ORDER BY date DESC LIMIT 3")->fetchAll();
 $recentVaccines = $pdo->query("SELECT v.*, p.tag_no FROM vaccination_records v JOIN pigs p ON v.pig_id = p.id ORDER BY v.date DESC LIMIT 3")->fetchAll();
+
+// Fetch Recent System Activity Logs
+$recentSystemLogs = $pdo->query("SELECT * FROM activity_logs ORDER BY id DESC LIMIT 5")->fetchAll();
 
 include 'includes/header.php';
 ?>
@@ -35,6 +45,9 @@ include 'includes/header.php';
             <div class="kpi-details">
                 <h3>Male Pigs</h3>
                 <p class="kpi-value"><?php echo $males; ?></p>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">
+                    🐗 <?php echo $intactBoars; ?> Boars | ✂️ <?php echo $castratedBarrows; ?> Castrated
+                </div>
             </div>
         </a>
         <a href="pigs.php?sex=Female" class="kpi-card kpi-females">
@@ -44,14 +57,14 @@ include 'includes/header.php';
                 <p class="kpi-value"><?php echo $females; ?></p>
             </div>
         </a>
-        <a href="pigs.php" class="kpi-card">
+        <a href="pigs.php?stage=weaner" class="kpi-card">
             <div class="kpi-icon">🐖</div>
             <div class="kpi-details">
                 <h3>Weaners / Piglets</h3>
                 <p class="kpi-value"><?php echo $weaners; ?></p>
             </div>
         </a>
-        <a href="reports.php" class="kpi-card kpi-pregnant">
+        <a href="reports.php?category=breeding" class="kpi-card kpi-pregnant">
             <div class="kpi-icon">🍼</div>
             <div class="kpi-details">
                 <h3>Pregnant Females</h3>
@@ -62,59 +75,152 @@ include 'includes/header.php';
 
     <div class="dashboard-content">
         <div class="card recent-activity">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0;">📋 Live System Audit Feed</h3>
+                <a href="logs.php" style="font-size: 0.85rem; color: var(--primary-color); font-weight: 600; text-decoration: none;">View All Logs &rarr;</a>
+            </div>
+
+            <div class="table-wrapper" style="border: none; box-shadow: none;">
+            <table class="data-table striped middle">
+                <thead>
+                    <tr>
+                        <th style="width:90px;">Time</th>
+                        <th style="width:130px;">User</th>
+                        <th>Action Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recentSystemLogs as $sl): ?>
+                        <tr>
+                            <td style="white-space: nowrap; font-family: monospace; font-size: 0.82rem;">
+                                <?php echo date('H:i:s', strtotime($sl['created_at'])); ?>
+                            </td>
+                            <td>
+                                <strong><?php echo htmlspecialchars($sl['username']); ?></strong>
+                                <span class="tbl-sub"><?php echo htmlspecialchars($sl['action'] ?? ''); ?></span>
+                            </td>
+                            <td><?php echo htmlspecialchars($sl['description']); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (count($recentSystemLogs) === 0): ?>
+                        <tr class="tbl-empty"><td colspan="3">No system activities logged yet.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+            </div>
+
+            <hr style="margin: 20px 0 15px; border: 0; border-top: 1px solid var(--border-color);">
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0; color: #E65100;">🤰 Maternity &amp; Farrowing Watch</h3>
+                <a href="reports.php?category=breeding" style="font-size: 0.85rem; color: var(--primary-color); font-weight: 600; text-decoration: none;">Full Breeding Audit &rarr;</a>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">Tracking pregnant sows, mating dates, estimated birth dates (+114 days), and countdowns.</p>
+
+            <div class="table-wrapper" style="border: none; box-shadow: none; margin-bottom: 15px;">
+            <table class="data-table striped middle">
+                <thead>
+                    <tr>
+                        <th>Sow Tag</th>
+                        <th>Mating Date</th>
+                        <th>Est. Farrowing</th>
+                        <th>Countdown</th>
+                        <th style="width:90px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($maternityWatch as $mw): ?>
+                        <?php
+                            $expectedDt = new DateTime($mw['expected_farrowing']);
+                            $today = new DateTime('today');
+                            $daysDiff = (int)$today->diff($expectedDt)->format('%r%a');
+                            if ($daysDiff > 0) {
+                                $cdBadge = '<span class="tbl-badge due">⌛ Due in ' . $daysDiff . 'd</span>';
+                            } elseif ($daysDiff === 0) {
+                                $cdBadge = '<span class="tbl-badge today">🚨 Due Today!</span>';
+                            } else {
+                                $absDays = abs($daysDiff);
+                                $cdBadge = '<span class="tbl-badge alarm">⚠️ Overdue ' . $absDays . 'd</span>';
+                            }
+                        ?>
+                        <tr>
+                            <td>
+                                <strong><a href="pig_view.php?id=<?php echo $mw['pig_id']; ?>" style="color: var(--primary-color); text-decoration: none;"><?php echo htmlspecialchars($mw['tag_no']); ?></a></strong>
+                                <span class="tbl-sub"><?php echo htmlspecialchars($mw['breed'] ?: 'N/A'); ?></span>
+                            </td>
+                            <td><?php echo htmlspecialchars($mw['date_of_service']); ?></td>
+                            <td><strong><?php echo htmlspecialchars($mw['expected_farrowing']); ?></strong></td>
+                            <td><?php echo $cdBadge; ?></td>
+                            <td><a href="pig_view.php?id=<?php echo $mw['pig_id']; ?>" class="btn btn-outline" style="padding: 3px 9px; font-size: 0.78rem;">View &rarr;</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (count($maternityWatch) === 0): ?>
+                        <tr class="tbl-empty"><td colspan="5">No active pregnant sows recorded at this time.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+            </div>
+
+            <hr style="margin: 20px 0 15px; border: 0; border-top: 1px solid var(--border-color);">
+
             <h3>Recent Health & Sales Activity</h3>
             
             <h4 style="color: var(--primary-color); margin-top: 10px; font-size: 0.95rem;">Latest Vaccinations / Health Logs</h4>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem;">
+            <div class="table-wrapper" style="border: none; box-shadow: none; margin-top: 8px;">
+            <table class="data-table striped middle">
                 <thead>
-                    <tr style="border-bottom: 1px solid #ccc; text-align: left;">
-                        <th style="padding: 6px;">Date</th>
-                        <th>Pig Tag</th>
-                        <th>Vaccine</th>
+                    <tr>
+                        <th style="width:110px;">Date</th>
+                        <th style="width:110px;">Pig Tag</th>
+                        <th>Vaccine / Treatment</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($recentVaccines as $rv): ?>
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 6px;"><?php echo htmlspecialchars($rv['date']); ?></td>
+                        <tr>
+                            <td><?php echo htmlspecialchars($rv['date']); ?></td>
                             <td><strong><?php echo htmlspecialchars($rv['tag_no']); ?></strong></td>
-                            <td><?php echo htmlspecialchars($rv['vaccine']); ?></td>
+                            <td><span class="tbl-badge green">💉 <?php echo htmlspecialchars($rv['vaccine']); ?></span></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (count($recentVaccines) === 0): ?>
-                        <tr><td colspan="3" style="padding: 10px; color: var(--text-muted);">No recent health logs.</td></tr>
+                        <tr class="tbl-empty"><td colspan="3">No recent health logs.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+            </div>
 
-            <h4 style="color: var(--primary-color); margin-top: 20px; font-size: 0.95rem;">Recent Live Pig Sales</h4>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.9rem;">
+            <h4 style="color: var(--primary-color); margin-top: 20px; font-size: 0.95rem;">💰 Recent Live Pig Sales</h4>
+            <div class="table-wrapper" style="border: none; box-shadow: none; margin-top: 8px;">
+            <table class="data-table striped middle">
                 <thead>
-                    <tr style="border-bottom: 1px solid #ccc; text-align: left;">
-                        <th style="padding: 6px;">Date</th>
+                    <tr>
+                        <th style="width:110px;">Date</th>
                         <th>Buyer</th>
                         <th>Amount (MWK)</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($recentSales as $rs): ?>
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 6px;"><?php echo htmlspecialchars($rs['date']); ?></td>
+                        <tr>
+                            <td><?php echo htmlspecialchars($rs['date']); ?></td>
                             <td><?php echo htmlspecialchars($rs['buyer_info'] ?: 'Cash Buyer'); ?></td>
-                            <td><strong>MWK <?php echo number_format($rs['amount'], 2); ?></strong></td>
+                            <td><span class="tbl-badge green" style="font-size:0.85rem;">MWK <?php echo number_format($rs['amount'], 2); ?></span></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (count($recentSales) === 0): ?>
-                        <tr><td colspan="3" style="padding: 10px; color: var(--text-muted);">No sales recorded yet.</td></tr>
+                        <tr class="tbl-empty"><td colspan="3">No sales recorded yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+            </div>
         </div>
 
         <div class="card quick-actions">
             <h3>Quick Actions</h3>
             <div class="action-buttons">
                 <a href="pig_form.php" class="btn btn-primary">+ Register New Pig</a>
+                <a href="logs.php" class="btn btn-outline">📋 View Activity Logs</a>
                 <a href="reports.php" class="btn btn-outline">📈 View Farm Reports</a>
                 <a href="profile.php" class="btn btn-outline">👤 My User Profile</a>
                 <?php if ($_SESSION['user_role'] === 'admin'): ?>

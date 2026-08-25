@@ -8,23 +8,26 @@ $endDate     = $_GET['end_date'] ?? '';
 $category    = $_GET['category'] ?? 'all';
 $sexFilter   = $_GET['sex'] ?? 'all';
 $stageFilter = $_GET['stage'] ?? 'all';
+$sourceFilter= $_GET['source'] ?? 'all';
 
-// Customization Toggles (Default all enabled if not specified)
-$isCustomized = isset($_GET['customized']);
-$incMetrics   = $isCustomized ? isset($_GET['inc_metrics']) : true;
-$incInventory = $isCustomized ? isset($_GET['inc_inventory']) : true;
-$incBreeding  = $isCustomized ? isset($_GET['inc_breeding']) : true;
-$incSales     = $isCustomized ? isset($_GET['inc_sales']) : true;
-$incHealth    = $isCustomized ? isset($_GET['inc_health']) : true;
-$incMortality = $isCustomized ? isset($_GET['inc_mortality']) : true;
+// Include all sections based on selected category
+$incMetrics   = true;
+$incInventory = true;
+$incExternal  = true;
+$incBreeding  = true;
+$incSales     = true;
+$incHealth    = true;
+$incMortality = true;
 
 // Build Pig Inventory Queries
 $pigWhere = ["1=1"];
 $pigParams = [];
 if ($sexFilter !== 'all') { $pigWhere[] = "sex = ?"; $pigParams[] = $sexFilter; }
 if ($stageFilter !== 'all') { $pigWhere[] = "stage = ?"; $pigParams[] = $stageFilter; }
+if ($sourceFilter !== 'all') { $pigWhere[] = "source = ?"; $pigParams[] = $sourceFilter; }
 
-$stages = $pdo->prepare("SELECT stage, COUNT(*) as count FROM pigs WHERE status = 'active' AND " . implode(' AND ', $pigWhere) . " GROUP BY stage");
+// Auto-stage population breakdown using $PIG_STAGE_SQL
+$stages = $pdo->prepare("SELECT ($PIG_STAGE_SQL) as stage, COUNT(*) as count FROM pigs WHERE status = 'active' AND " . implode(' AND ', $pigWhere) . " GROUP BY ($PIG_STAGE_SQL) ORDER BY FIELD(($PIG_STAGE_SQL),'piglet','weaner','grower','finisher','adult')");
 $stages->execute($pigParams);
 $stagesList = $stages->fetchAll();
 
@@ -32,16 +35,35 @@ $genders = $pdo->prepare("SELECT sex, COUNT(*) as count FROM pigs WHERE status =
 $genders->execute($pigParams);
 $gendersList = $genders->fetchAll();
 
+// External Pigs Query (Purchased Livestock)
+$extWhere = ["source = 'External Purchase'"];
+$extParams = [];
+if (!empty($startDate)) { $extWhere[] = "dob >= ?"; $extParams[] = $startDate; }
+if (!empty($endDate)) { $extWhere[] = "dob <= ?"; $extParams[] = $endDate; }
+if ($sexFilter !== 'all') { $extWhere[] = "sex = ?"; $extParams[] = $sexFilter; }
+if ($stageFilter !== 'all') { $extWhere[] = "stage = ?"; $extParams[] = $stageFilter; }
+
+$externalPigsStmt = $pdo->prepare("SELECT *, TIMESTAMPDIFF(MONTH, dob, CURDATE()) as age_months FROM pigs WHERE " . implode(' AND ', $extWhere) . " ORDER BY id DESC LIMIT 100");
+$externalPigsStmt->execute($extParams);
+$externalPigsList = $externalPigsStmt->fetchAll();
+
 // Breeding Query
-$breedWhere = ["b.status = 'pregnant'"];
+// Breeding Query (All breeding, pregnancy, and weaning records in scope)
+$breedWhere = ["1=1"];
 $breedParams = [];
 if (!empty($startDate)) { $breedWhere[] = "b.date_of_service >= ?"; $breedParams[] = $startDate; }
 if (!empty($endDate)) { $breedWhere[] = "b.date_of_service <= ?"; $breedParams[] = $endDate; }
 if ($sexFilter !== 'all') { $breedWhere[] = "p.sex = ?"; $breedParams[] = $sexFilter; }
+if ($sourceFilter !== 'all') { $breedWhere[] = "p.source = ?"; $breedParams[] = $sourceFilter; }
 
 $pregnantStmt = $pdo->prepare("SELECT b.*, p.tag_no, p.breed FROM breeding_records b JOIN pigs p ON b.pig_id = p.id WHERE " . implode(' AND ', $breedWhere) . " ORDER BY b.expected_farrowing ASC");
 $pregnantStmt->execute($breedParams);
 $pregnantRecords = $pregnantStmt->fetchAll();
+
+// Male Castration Breakdown Query
+$maleCastratedStmt = $pdo->prepare("SELECT castrated, COUNT(*) as count FROM pigs WHERE sex = 'Male' AND status = 'active' AND " . implode(' AND ', $pigWhere) . " GROUP BY castrated");
+$maleCastratedStmt->execute($pigParams);
+$maleCastratedList = $maleCastratedStmt->fetchAll();
 
 // Sales Query
 $salesWhere = ["1=1"];
@@ -62,6 +84,7 @@ $vacWhere = ["1=1"];
 $vacParams = [];
 if (!empty($startDate)) { $vacWhere[] = "v.date >= ?"; $vacParams[] = $startDate; }
 if (!empty($endDate)) { $vacWhere[] = "v.date <= ?"; $vacParams[] = $endDate; }
+if ($sourceFilter !== 'all') { $vacWhere[] = "p.source = ?"; $vacParams[] = $sourceFilter; }
 
 $vaccinesListStmt = $pdo->prepare("SELECT v.*, p.tag_no FROM vaccination_records v JOIN pigs p ON v.pig_id = p.id WHERE " . implode(' AND ', $vacWhere) . " ORDER BY v.date DESC LIMIT 50");
 $vaccinesListStmt->execute($vacParams);
@@ -72,6 +95,7 @@ $mortWhere = ["1=1"];
 $mortParams = [];
 if (!empty($startDate)) { $mortWhere[] = "m.date >= ?"; $mortParams[] = $startDate; }
 if (!empty($endDate)) { $mortWhere[] = "m.date <= ?"; $mortParams[] = $endDate; }
+if ($sourceFilter !== 'all') { $mortWhere[] = "p.source = ?"; $mortParams[] = $sourceFilter; }
 
 $mortalityStmt = $pdo->prepare("SELECT m.*, p.tag_no FROM mortality m JOIN pigs p ON m.pig_id = p.id WHERE " . implode(' AND ', $mortWhere) . " ORDER BY m.date DESC LIMIT 50");
 $mortalityStmt->execute($mortParams);
@@ -96,7 +120,7 @@ include 'includes/header.php';
     body {
         background: #fff !important;
     }
-    .print-official-header {
+    .print-official-header, .print-approval-footer {
         display: flex !important;
     }
     .card {
@@ -113,6 +137,14 @@ include 'includes/header.php';
     padding-bottom: 15px;
     margin-bottom: 20px;
     border-bottom: 3px double #2E7D32;
+}
+.print-approval-footer {
+    display: none;
+    justify-content: space-between;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ccc;
+    font-size: 0.85rem;
 }
 .filter-row {
     display: flex;
@@ -203,11 +235,20 @@ include 'includes/header.php';
                     <label>Report Category</label>
                     <select name="category">
                         <option value="all" <?php echo $category === 'all' ? 'selected' : ''; ?>>All Combined Reports</option>
-                        <option value="inventory" <?php echo $category === 'inventory' ? 'selected' : ''; ?>>Pig Population & Inventory</option>
-                        <option value="breeding" <?php echo $category === 'breeding' ? 'selected' : ''; ?>>Breeding & Pregnancy Audit</option>
-                        <option value="sales" <?php echo $category === 'sales' ? 'selected' : ''; ?>>Sales & Revenue Ledger</option>
-                        <option value="vaccination" <?php echo $category === 'vaccination' ? 'selected' : ''; ?>>Health & Vaccination Log</option>
-                        <option value="mortality" <?php echo $category === 'mortality' ? 'selected' : ''; ?>>Mortality & Loss Audit</option>
+                        <option value="inventory" <?php echo $category === 'inventory' ? 'selected' : ''; ?>>Pig Population &amp; Inventory</option>
+                        <option value="external" <?php echo $category === 'external' ? 'selected' : ''; ?>>External / Purchased Pigs</option>
+                        <option value="breeding" <?php echo $category === 'breeding' ? 'selected' : ''; ?>>Breeding &amp; Pregnancy Audit</option>
+                        <option value="sales" <?php echo $category === 'sales' ? 'selected' : ''; ?>>Sales &amp; Revenue Ledger</option>
+                        <option value="vaccination" <?php echo $category === 'vaccination' ? 'selected' : ''; ?>>Health &amp; Vaccination Log</option>
+                        <option value="mortality" <?php echo $category === 'mortality' ? 'selected' : ''; ?>>Mortality &amp; Loss Audit</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Source / Origin</label>
+                    <select name="source">
+                        <option value="all" <?php echo $sourceFilter === 'all' ? 'selected' : ''; ?>>All Origins</option>
+                        <option value="Born on Farm" <?php echo $sourceFilter === 'Born on Farm' ? 'selected' : ''; ?>>Born on Farm</option>
+                        <option value="External Purchase" <?php echo $sourceFilter === 'External Purchase' ? 'selected' : ''; ?>>External Purchase / Bought</option>
                     </select>
                 </div>
                 <div class="filter-group">
@@ -233,33 +274,9 @@ include 'includes/header.php';
                 </div>
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; color: var(--text-main);">Choose Sections to Include in Report:</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                    <label class="toggle-chip">
-                        <input type="checkbox" name="inc_metrics" value="1" <?php echo $incMetrics ? 'checked' : ''; ?>> 📊 Summary KPIs
-                    </label>
-                    <label class="toggle-chip">
-                        <input type="checkbox" name="inc_inventory" value="1" <?php echo $incInventory ? 'checked' : ''; ?>> 🐷 Population Breakdown
-                    </label>
-                    <label class="toggle-chip">
-                        <input type="checkbox" name="inc_breeding" value="1" <?php echo $incBreeding ? 'checked' : ''; ?>> 🍼 Breeding & Farrowing
-                    </label>
-                    <label class="toggle-chip">
-                        <input type="checkbox" name="inc_sales" value="1" <?php echo $incSales ? 'checked' : ''; ?>> 💰 Sales & Revenue
-                    </label>
-                    <label class="toggle-chip">
-                        <input type="checkbox" name="inc_health" value="1" <?php echo $incHealth ? 'checked' : ''; ?>> 💉 Health & Vaccines
-                    </label>
-                    <label class="toggle-chip">
-                        <input type="checkbox" name="inc_mortality" value="1" <?php echo $incMortality ? 'checked' : ''; ?>> ⚠️ Mortality Audit
-                    </label>
-                </div>
-            </div>
-
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <a href="reports.php" class="btn btn-outline" style="font-size: 0.9rem;">Reset Filters</a>
-                <button type="submit" class="btn btn-primary" style="font-size: 0.9rem;">🔍 Generate Custom Report</button>
+                <button type="submit" class="btn btn-primary" style="font-size: 0.9rem;">🔍 Generate Report</button>
             </div>
         </form>
     </div>
@@ -315,88 +332,201 @@ include 'includes/header.php';
     <div class="dashboard-content" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
         <!-- Population by Stage -->
         <div class="card">
-            <h3>Population Breakdown by Life Stage</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <h3>📊 Population by Life Stage</h3>
+            <div class="table-wrapper" style="border:none; box-shadow:none; margin-top:12px;">
+            <table class="data-table striped middle">
                 <thead>
-                    <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                        <th style="padding: 8px;">Stage</th>
-                        <th style="padding: 8px;">Active Count</th>
+                    <tr>
+                        <th>Stage</th>
+                        <th>Active Count</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach($stagesList as $s): ?>
-                        <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 8px; text-transform: capitalize;"><strong><?php echo htmlspecialchars($s['stage']); ?></strong></td>
-                            <td style="padding: 8px;"><?php echo $s['count']; ?></td>
+                        <tr>
+                            <td style="text-transform: capitalize;"><strong><?php echo htmlspecialchars($s['stage']); ?></strong></td>
+                            <td><span class="tbl-badge blue"><?php echo $s['count']; ?></span></td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if(count($stagesList) === 0): ?><tr><td colspan="2" style="padding: 8px;">No active pigs found matching filter.</td></tr><?php endif; ?>
+                    <?php if(count($stagesList) === 0): ?>
+                        <tr class="tbl-empty"><td colspan="2">No active pigs found matching filter.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
+            </div>
         </div>
 
-        <!-- Population by Gender -->
+        <!-- Population by Gender & Castration -->
         <div class="card">
-            <h3>Population Breakdown by Sex / Gender</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <h3>♂️♀️ Sex &amp; Male Castration Breakdown</h3>
+            <div class="table-wrapper" style="border:none; box-shadow:none; margin-top:12px;">
+            <table class="data-table striped middle">
                 <thead>
-                    <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                        <th style="padding: 8px;">Sex</th>
-                        <th style="padding: 8px;">Count</th>
+                    <tr>
+                        <th>Category / Gender</th>
+                        <th>Active Count</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach($gendersList as $g): ?>
-                        <tr style="border-bottom: 1px solid var(--border-color);">
-                            <td style="padding: 8px;"><strong><?php echo htmlspecialchars($g['sex']); ?></strong></td>
-                            <td style="padding: 8px;"><?php echo $g['count']; ?></td>
+                        <tr>
+                            <td><strong><?php echo htmlspecialchars($g['sex']); ?>s</strong></td>
+                            <td><span class="tbl-badge <?php echo $g['sex'] === 'Male' ? 'blue' : 'purple'; ?>"><?php echo $g['count']; ?></span></td>
                         </tr>
                     <?php endforeach; ?>
-                    <?php if(count($gendersList) === 0): ?><tr><td colspan="2" style="padding: 8px;">No data matching filter.</td></tr><?php endif; ?>
+                    <?php foreach($maleCastratedList as $mc): ?>
+                        <tr style="background: #fafafa;">
+                            <td style="padding-left: 24px; font-size: 0.88rem;">
+                                <?php echo !empty($mc['castrated']) ? '✂️ Castrated Males (Barrows)' : '🐗 Intact Males (Boars)'; ?>
+                            </td>
+                            <td><span class="tbl-badge <?php echo !empty($mc['castrated']) ? 'green' : 'orange'; ?>"><?php echo $mc['count']; ?></span></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if(count($gendersList) === 0): ?>
+                        <tr class="tbl-empty"><td colspan="2">No data matching filter.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- 3. Active Pregnancy & Breeding Tracker -->
+    <!-- 2.5 External / Purchased Pigs Section -->
+    <?php if ($incExternal && ($category === 'all' || $category === 'inventory' || $category === 'external')): ?>
+    <div class="card" style="margin-bottom: 20px;">
+        <h3 style="color: var(--primary-color);">🛒 External / Purchased Pigs Acquisition Audit</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Audit ledger of pigs acquired from external sources/suppliers.</p>
+        <div class="table-wrapper">
+        <table class="data-table striped">
+            <thead>
+                <tr>
+                    <th>Ear Tag No</th>
+                    <th>Sex</th>
+                    <th>Stage</th>
+                    <th>Breed</th>
+                    <th>Age</th>
+                    <th>Sire / Dam</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($externalPigsList as $ext): ?>
+                    <tr>
+                        <td>
+                            <strong><a href="pig_view.php?id=<?php echo $ext['id']; ?>" style="color:var(--primary-color);text-decoration:none;"><?php echo htmlspecialchars($ext['tag_no']); ?></a></strong>
+                            <span class="tbl-badge blue" style="font-size:0.7rem; margin-left:5px;">External</span>
+                        </td>
+                        <td><?php echo htmlspecialchars($ext['sex']); ?></td>
+                        <td style="text-transform: capitalize; font-weight: 600;"><?php echo htmlspecialchars($ext['stage']); ?></td>
+                        <td><?php echo htmlspecialchars($ext['breed'] ?: 'N/A'); ?></td>
+                        <td><?php echo htmlspecialchars($ext['age_months']); ?> mos</td>
+                        <td>
+                            <span class="tbl-sub">S: <?php echo htmlspecialchars($ext['sire'] ?: 'N/A'); ?></span>
+                            <span class="tbl-sub">D: <?php echo htmlspecialchars($ext['dam'] ?: 'N/A'); ?></span>
+                        </td>
+                        <td><span class="tbl-badge green"><?php echo ucfirst(htmlspecialchars($ext['status'])); ?></span></td>
+                    </tr>
+                <?php endforeach; ?>
+                <?php if (count($externalPigsList) === 0): ?>
+                    <tr class="tbl-empty"><td colspan="7">No externally purchased pigs found matching criteria.</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- 3. Active Pregnancy, Gestation & Breeding Tracker -->
     <?php if ($incBreeding && ($category === 'all' || $category === 'breeding')): ?>
     <div class="card" style="margin-bottom: 20px;">
-        <h3 style="color: var(--primary-color);">Active Pregnant Sows & Expected Farrowing Schedule</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem;">
+        <h3 style="color: var(--primary-color);">🍼 Breeding, Gestation &amp; Farrowing Performance Audit</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Tracks mating dates, estimated birth dates (+114 days), countdowns, farrowing outcomes, and weaner performance.</p>
+        <div class="table-wrapper">
+        <table class="data-table striped">
             <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                    <th style="padding: 10px;">Sow Tag</th>
-                    <th>Breed</th>
-                    <th>Date of Mating</th>
-                    <th>Sire Tag</th>
-                    <th>Expected Farrowing Date</th>
+                <tr>
+                    <th>Sow Tag</th>
+                    <th>Mating Date</th>
+                    <th>Sire</th>
+                    <th>Est. Farrowing</th>
+                    <th>Farrowing Outcome</th>
+                    <th>Weaning</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($pregnantRecords as $pr): ?>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 10px;"><strong><a href="pig_view.php?id=<?php echo $pr['pig_id']; ?>"><?php echo htmlspecialchars($pr['tag_no']); ?></a></strong></td>
-                        <td><?php echo htmlspecialchars($pr['breed']); ?></td>
+                    <?php
+                        $expectedDt = new DateTime($pr['expected_farrowing']);
+                        $today = new DateTime('today');
+                        $daysDiff = (int)$today->diff($expectedDt)->format('%r%a');
+                        $cdBadge = '';
+                        if ($pr['status'] === 'pregnant') {
+                            if ($daysDiff > 0) {
+                                $cdBadge = '<span class="tbl-badge due">⌛ Due in ' . $daysDiff . 'd</span>';
+                            } elseif ($daysDiff === 0) {
+                                $cdBadge = '<span class="tbl-badge today">🚨 Due Today!</span>';
+                            } else {
+                                $absDays = abs($daysDiff);
+                                $cdBadge = '<span class="tbl-badge alarm">⚠️ Overdue ' . $absDays . 'd</span>';
+                            }
+                        }
+                        $sBadgeClass = match($pr['status']) {
+                            'pregnant' => 'orange', 'farrowed' => 'blue', 'weaned' => 'green', default => 'grey'
+                        };
+                        $wRate = null;
+                        if (!empty($pr['born_alive']) && $pr['born_alive'] > 0 && $pr['weaned_count'] !== null) {
+                            $wRate = round(($pr['weaned_count'] / $pr['born_alive']) * 100, 1);
+                        }
+                    ?>
+                    <tr>
+                        <td>
+                            <strong><a href="pig_view.php?id=<?php echo $pr['pig_id']; ?>" style="color:var(--primary-color);text-decoration:none;"><?php echo htmlspecialchars($pr['tag_no']); ?></a></strong>
+                            <span class="tbl-sub"><?php echo htmlspecialchars($pr['breed']); ?></span>
+                        </td>
                         <td><?php echo htmlspecialchars($pr['date_of_service']); ?></td>
-                        <td><?php echo htmlspecialchars($pr['sire_no'] ?: 'N/A'); ?></td>
-                        <td><strong style="color: var(--primary-color);"><?php echo htmlspecialchars($pr['expected_farrowing']); ?></strong></td>
-                        <td><span class="badge" style="padding: 4px 8px; background: #FFF3E0; color: #E65100; border-radius: 4px;">Pregnant</span></td>
+                        <td><strong><?php echo htmlspecialchars($pr['sire_no'] ?: 'N/A'); ?></strong></td>
+                        <td><strong><?php echo htmlspecialchars($pr['expected_farrowing']); ?></strong></td>
+                        <td>
+                            <?php if ($pr['total_born'] !== null): ?>
+                                <strong><?php echo htmlspecialchars($pr['total_born']); ?> born</strong><br>
+                                <span class="stat-pill alive">✅ <?php echo htmlspecialchars($pr['born_alive']); ?> alive</span>
+                                <span class="stat-pill dead">💀 <?php echo htmlspecialchars($pr['stillborn']); ?> still</span>
+                            <?php else: ?>
+                                <span style="color:var(--text-muted); font-style:italic;">Pending birth</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($pr['weaned_count'] !== null): ?>
+                                <strong><?php echo htmlspecialchars($pr['weaned_count']); ?> weaners</strong>
+                                <?php if ($wRate !== null): ?>
+                                    <span class="stat-pill blue"><?php echo $wRate; ?>%</span>
+                                <?php endif; ?>
+                                <span class="tbl-sub">Avg: <?php echo htmlspecialchars($pr['avg_weaning_wt'] ?: 'N/A'); ?> kg</span>
+                            <?php else: ?>
+                                <span style="color:var(--text-muted); font-style:italic;">Not weaned</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="tbl-badge <?php echo $sBadgeClass; ?>"><?php echo ucfirst(htmlspecialchars($pr['status'])); ?></span>
+                            <?php if ($cdBadge): ?><div style="margin-top:4px;"><?php echo $cdBadge; ?></div><?php endif; ?>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($pregnantRecords) === 0): ?>
-                    <tr><td colspan="6" style="padding: 15px; text-align: center; color: var(--text-muted);">No currently active pregnant sows matching criteria.</td></tr>
+                    <tr class="tbl-empty"><td colspan="7">No breeding or gestation records matching criteria.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endif; ?>
 
     <!-- 4. Sales & Financial Summary -->
     <?php if ($incSales && ($category === 'all' || $category === 'sales')): ?>
     <div class="card" style="margin-bottom: 20px;">
-        <h3 style="color: var(--primary-color);">Sales & Revenue Ledger</h3>
+        <h3 style="color: var(--primary-color);">💰 Sales &amp; Revenue Ledger</h3>
         <div style="padding: 15px 20px; background: #E8F5E9; border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center;">
             <div>
                 <h4 style="color: var(--primary-color); margin: 0;">Total Revenue Generated (Filtered Period)</h4>
@@ -404,11 +534,11 @@ include 'includes/header.php';
             </div>
             <p style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin: 0;">MWK <?php echo number_format($totalSales, 2); ?></p>
         </div>
-
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem;">
+        <div class="table-wrapper">
+        <table class="data-table striped middle">
             <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                    <th style="padding: 8px;">Date</th>
+                <tr>
+                    <th style="width:110px;">Date</th>
                     <th>Type</th>
                     <th>Ref / Pig</th>
                     <th>Buyer Details</th>
@@ -417,31 +547,33 @@ include 'includes/header.php';
             </thead>
             <tbody>
                 <?php foreach($salesList as $sl): ?>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 8px;"><?php echo htmlspecialchars($sl['date']); ?></td>
+                    <tr>
+                        <td><?php echo htmlspecialchars($sl['date']); ?></td>
                         <td style="text-transform: capitalize;"><?php echo htmlspecialchars(str_replace('_', ' ', $sl['type'])); ?></td>
-                        <td><?php echo htmlspecialchars($sl['reference_id'] ?: '-'); ?></td>
+                        <td><?php echo htmlspecialchars($sl['reference_id'] ?: '—'); ?></td>
                         <td><?php echo htmlspecialchars($sl['buyer_info'] ?: 'Cash Customer'); ?></td>
-                        <td><strong>MWK <?php echo number_format($sl['amount'], 2); ?></strong></td>
+                        <td><span class="tbl-badge green">MWK <?php echo number_format($sl['amount'], 2); ?></span></td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($salesList) === 0): ?>
-                    <tr><td colspan="5" style="padding: 10px; color: var(--text-muted);">No sales records found matching filters.</td></tr>
+                    <tr class="tbl-empty"><td colspan="5">No sales records found matching filters.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endif; ?>
 
     <!-- 5. Health & Vaccination Section -->
     <?php if ($incHealth && ($category === 'all' || $category === 'vaccination')): ?>
     <div class="card" style="margin-bottom: 20px;">
-        <h3 style="color: var(--primary-color);">Health & Vaccination Audit Logs</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem;">
+        <h3 style="color: var(--primary-color);">💉 Health &amp; Vaccination Audit Logs</h3>
+        <div class="table-wrapper" style="margin-top:12px;">
+        <table class="data-table striped middle">
             <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                    <th style="padding: 8px;">Date</th>
-                    <th>Pig Tag</th>
+                <tr>
+                    <th style="width:110px;">Date</th>
+                    <th style="width:100px;">Pig Tag</th>
                     <th>Vaccine / Treatment</th>
                     <th>Dose / Route</th>
                     <th>Administered By</th>
@@ -450,52 +582,67 @@ include 'includes/header.php';
             </thead>
             <tbody>
                 <?php foreach($recentVaccines as $rv): ?>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 8px;"><?php echo htmlspecialchars($rv['date']); ?></td>
+                    <tr>
+                        <td><?php echo htmlspecialchars($rv['date']); ?></td>
                         <td><strong><?php echo htmlspecialchars($rv['tag_no']); ?></strong></td>
                         <td><?php echo htmlspecialchars($rv['vaccine']); ?></td>
-                        <td><?php echo htmlspecialchars(($rv['dose'] ? $rv['dose'] . ' ' : '') . ($rv['route'] ?: '')); ?></td>
+                        <td><span class="tbl-badge green"><?php echo htmlspecialchars(($rv['dose'] ? $rv['dose'] . ' ' : '') . ($rv['route'] ?: '')); ?></span></td>
                         <td><?php echo htmlspecialchars($rv['administered_by'] ?: 'Staff'); ?></td>
-                        <td><?php echo htmlspecialchars($rv['remarks'] ?: '-'); ?></td>
+                        <td><?php echo htmlspecialchars($rv['remarks'] ?: '—'); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($recentVaccines) === 0): ?>
-                    <tr><td colspan="6" style="padding: 10px; color: var(--text-muted);">No health records found matching filters.</td></tr>
+                    <tr class="tbl-empty"><td colspan="6">No health records found matching filters.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endif; ?>
 
     <!-- 6. Mortality Section -->
     <?php if ($incMortality && ($category === 'all' || $category === 'mortality')): ?>
     <div class="card" style="margin-bottom: 20px;">
-        <h3 style="color: var(--primary-color);">Mortality & Loss Audit Log</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem;">
+        <h3 style="color: var(--primary-color);">💀 Mortality &amp; Loss Audit Log</h3>
+        <div class="table-wrapper" style="margin-top:12px;">
+        <table class="data-table striped middle">
             <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                    <th style="padding: 8px;">Date</th>
-                    <th>Pig Tag</th>
+                <tr>
+                    <th style="width:110px;">Date</th>
+                    <th style="width:110px;">Pig Tag</th>
                     <th>Reported Cause of Death</th>
                     <th>Remarks</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach($mortalityList as $ml): ?>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 8px;"><?php echo htmlspecialchars($ml['date']); ?></td>
+                    <tr>
+                        <td><?php echo htmlspecialchars($ml['date']); ?></td>
                         <td><strong><?php echo htmlspecialchars($ml['tag_no']); ?></strong></td>
-                        <td style="color: #c62828;"><strong><?php echo htmlspecialchars($ml['cause'] ?: 'Unspecified'); ?></strong></td>
-                        <td><?php echo htmlspecialchars($ml['remarks'] ?: '-'); ?></td>
+                        <td><span class="tbl-badge red"><?php echo htmlspecialchars($ml['cause'] ?: 'Unspecified'); ?></span></td>
+                        <td><?php echo htmlspecialchars($ml['remarks'] ?: '—'); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($mortalityList) === 0): ?>
-                    <tr><td colspan="4" style="padding: 10px; color: var(--text-muted);">No mortality records logged matching filters.</td></tr>
+                    <tr class="tbl-empty"><td colspan="4">No mortality records logged matching filters.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endif; ?>
+
+    <!-- Official Print Approval Signature Block -->
+    <div class="print-approval-footer">
+        <div>
+            <p><strong>Report Prepared / Audited By:</strong> ___________________________</p>
+            <p>Name &amp; Designation: <?php echo htmlspecialchars($_SESSION['user_fullname'] ?? 'Staff'); ?></p>
+        </div>
+        <div style="text-align: right;">
+            <p><strong>Farm Manager Verification &amp; Stamp:</strong> ___________________________</p>
+            <p>Date: ____ / ____ / 20___</p>
+        </div>
+    </div>
 
 </div>
 

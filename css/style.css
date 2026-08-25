@@ -848,3 +848,420 @@ select.form-control option {
 }
 
 
+/* ==========================================================================
+   Global Modern Table System — Used Across All Pages
+   ========================================================================== */
+
+/* Scroll container for overflow on small screens */
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Base table */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    min-width: 560px;
+}
+
+/* Header row */
+.data-table thead tr {
+    background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+    color: #ffffff;
+    text-align: left;
+}
+
+.data-table thead th {
+    padding: 12px 16px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    white-space: nowrap;
+    border: none;
+}
+
+/* Body rows */
+.data-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s ease;
+}
+
+.data-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(46, 125, 50, 0.05);
+}
+
+/* Striped rows */
+.data-table.striped tbody tr:nth-child(even) {
+    background-color: #f9fafb;
+}
+
+.data-table.striped tbody tr:nth-child(even):hover {
+    background-color: rgba(46, 125, 50, 0.06);
+}
+
+/* Table cells */
+.data-table td {
+    padding: 12px 16px;
+    vertical-align: top;
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+/* Muted / empty state row */
+.data-table .tbl-empty td {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: var(--text-muted);
+    font-style: italic;
+    background: #fafafa;
+}
+
+/* Status badge */
+.tbl-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.tbl-badge.green  { background: #E8F5E9; color: #1B5E20; }
+.tbl-badge.orange { background: #FFF3E0; color: #E65100; }
+.tbl-badge.red    { background: #FFEBEE; color: #C62828; }
+.tbl-badge.blue   { background: #E3F2FD; color: #1565C0; }
+.tbl-badge.grey   { background: #ECEFF1; color: #37474F; }
+.tbl-badge.purple { background: #F3E5F5; color: #6A1B9A; }
+
+/* Countdown alarm badges */
+.tbl-badge.alarm { background: #FFEBEE; color: #C62828; animation: pulse-badge 1.5s infinite; }
+.tbl-badge.today { background: #FFF3E0; color: #E65100; animation: pulse-badge 1.5s infinite; }
+.tbl-badge.due   { background: #E3F2FD; color: #1565C0; }
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Sub-text below a cell value */
+.tbl-sub {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+/* Bold primary value */
+.tbl-val {
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Compact variant */
+.data-table.compact td,
+.data-table.compact th {
+    padding: 8px 12px;
+}
+
+/* Vertical middle */
+.data-table.middle td {
+    vertical-align: middle;
+}
+
+/* Stat pill */
+.stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 10px;
+}
+
+.stat-pill.alive { background: #E8F5E9; color: #1B5E20; }
+.stat-pill.dead  { background: #FFEBEE; color: #C62828; }
+.stat-pill.blue  { background: #E3F2FD; color: #1565C0; }
+
+/* Breeding/gestation card rows — replaces congested wide table */
+.breed-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.breed-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) auto;
+    gap: 1rem 1.5rem;
+    align-items: start;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.breed-card.pregnant { border-left-color: #E65100; }
+.breed-card.farrowed { border-left-color: #1565C0; }
+.breed-card.weaned   { border-left-color: #2E7D32; }
+.breed-card.overdue  { border-left-color: #C62828; background: #fff9f9; }
+
+.breed-card:hover {
+    box-shadow: 0 4px 16px rgba(46,125,50,0.12);
+}
+
+.breed-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.breed-field-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+
+.breed-field-value {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.breed-field-meta {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+.breed-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding-top: 4px;
+}
+
+@media (max-width: 860px) {
+    .breed-card {
+        grid-template-columns: 1fr 1fr;
+    }
+    .breed-card-actions {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .breed-card {
+        grid-template-columns: 1fr;
+    }
+    .data-table thead th {
+        padding: 9px 10px;
+        font-size: 0.7rem;
+    }
+    .data-table td {
+        padding: 9px 10px;
+    }
+}
+
+/* =============================================================
+   NOTIFICATION BELL SYSTEM
+   ============================================================= */
+
+/* Wrapper keeps bell + dropdown together */
+.notif-bell-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Bell button */
+.notif-bell-btn {
+    position: relative;
+    background: none;
+    border: none;
+    font-size: 1.35rem;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 10px;
+    transition: background 0.2s;
+    line-height: 1;
+    color: var(--primary-color);
+}
+.notif-bell-btn:hover {
+    background: rgba(46,125,50,0.1);
+}
+
+/* Unread count badge */
+.notif-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50px;
+    background: #C62828;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    box-shadow: 0 0 0 2px #fff;
+    animation: notif-pulse 2s infinite;
+}
+@keyframes notif-pulse {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.15); }
+}
+
+/* Dropdown panel */
+.notif-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 370px;
+    max-width: 95vw;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    z-index: 9999;
+    overflow: hidden;
+    animation: notif-slideIn 0.2s ease;
+}
+.notif-dropdown.notif-dropdown-open {
+    display: block;
+}
+@keyframes notif-slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Dropdown header */
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 100%);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+.notif-mark-all {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.15s;
+}
+.notif-mark-all:hover { background: rgba(255,255,255,0.35); }
+
+/* Notification items list */
+.notif-list {
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+/* Individual notification item */
+.notif-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.15s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: #f9f9f9; }
+
+/* Unread highlight */
+.notif-item-unread {
+    border-left: 3px solid #1565C0;
+    background: #F0F7FF;
+}
+
+/* Type-specific left border colours */
+.notif-item-alert   { border-left: 3px solid #C62828 !important; }
+.notif-item-warning { border-left: 3px solid #E65100 !important; }
+.notif-item-success { border-left: 3px solid #2E7D32 !important; }
+.notif-item-info    { border-left: 3px solid #1565C0 !important; }
+
+.notif-item-alert.notif-item-unread   { background: #FFF5F5; }
+.notif-item-warning.notif-item-unread { background: #FFF8F0; }
+.notif-item-success.notif-item-unread { background: #F2FBF2; }
+
+.notif-item-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 3px;
+}
+.notif-item-msg {
+    font-size: 0.78rem;
+    color: #555;
+    line-height: 1.45;
+    margin-bottom: 4px;
+}
+.notif-item-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* Empty state */
+.notif-empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+.notif-empty p { margin: 4px 0 0; font-size: 0.88rem; }
+
+/* Footer link */
+.notif-footer {
+    padding: 10px 16px;
+    text-align: center;
+    border-top: 1px solid #f0f0f0;
+    background: #fafafa;
+}
+.notif-footer a {
+    font-size: 0.82rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+.notif-footer a:hover { text-decoration: underline; }
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .notif-dropdown {
+        width: calc(100vw - 24px);
+        right: -60px;
+    }
+}

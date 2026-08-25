@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=msantha_pigs
+      - DB_USER=root
+      - DB_PASS=secret
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: msantha_pigs
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./deploy_database.sql:/docker-entrypoint-initdb.d/deploy_database.sql
+
+volumes:
+  db_data:

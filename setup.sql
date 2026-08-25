@@ -19,7 +19,10 @@ CREATE TABLE IF NOT EXISTS pigs (
     sire VARCHAR(50),
     dam VARCHAR(50),
     status VARCHAR(20) DEFAULT 'active',
-    stage VARCHAR(20) DEFAULT 'adult'
+    stage VARCHAR(20) DEFAULT 'adult',
+    source VARCHAR(50) DEFAULT 'Born on Farm',
+    castrated TINYINT(1) DEFAULT 0,
+    castration_date DATE NULL
 );
 
 CREATE TABLE IF NOT EXISTS growth_records (
@@ -43,6 +46,8 @@ CREATE TABLE IF NOT EXISTS breeding_records (
     born_alive INT,
     stillborn INT,
     avg_weaning_wt DECIMAL(10,2),
+    weaning_date DATE NULL,
+    weaned_count INT NULL,
     status VARCHAR(20) DEFAULT 'pregnant',
     FOREIGN KEY(pig_id) REFERENCES pigs(id)
 );
@@ -79,5 +84,18 @@ CREATE TABLE IF NOT EXISTS mortality (
     FOREIGN KEY(pig_id) REFERENCES pigs(id)
 );
 
+CREATE TABLE IF NOT EXISTS activity_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    username VARCHAR(50) NOT NULL,
+    user_role VARCHAR(20) DEFAULT 'clerk',
+    action VARCHAR(50) NOT NULL,
+    description TEXT NOT NULL,
+    ip_address VARCHAR(45) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 -- Insert default users (Password is 'admin123' and 'clerk123', hashed using bcrypt)
 -- You can also run the application once to auto-seed these users if they don't exist.
+

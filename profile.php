@@ -29,9 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hash = password_hash($new_password, PASSWORD_DEFAULT);
                 $updateStmt = $pdo->prepare("UPDATE users SET full_name = ?, phone = ?, password = ? WHERE id = ?");
                 $updateStmt->execute([$full_name, $phone, $hash, $userId]);
+                logActivity($pdo, 'password_changed', "Updated account password and profile details");
             } else {
                 $updateStmt = $pdo->prepare("UPDATE users SET full_name = ?, phone = ? WHERE id = ?");
                 $updateStmt->execute([$full_name, $phone, $userId]);
+                logActivity($pdo, 'profile_updated', "Updated personal user profile details");
             }
 
             $pdo->commit();

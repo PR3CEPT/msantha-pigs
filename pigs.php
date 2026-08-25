@@ -2,33 +2,45 @@
 require_once 'db.php';
 requireLogin();
 
-$sexFilter = $_GET['sex'] ?? null;
-$stageFilter = $_GET['stage'] ?? null;
-$statusFilter = $_GET['status'] ?? 'active';
+$sexFilter       = $_GET['sex'] ?? null;
+$stageFilter     = $_GET['stage'] ?? null;
+$statusFilter    = $_GET['status'] ?? 'active';
+$castratedFilter = $_GET['castrated'] ?? null;
 
-$query = "SELECT *, TIMESTAMPDIFF(MONTH, dob, CURDATE()) as age_months FROM pigs WHERE 1=1";
+// Standard SELECT * — stage is overridden in PHP via computePigStage()
+$query  = "SELECT *, TIMESTAMPDIFF(MONTH, dob, CURDATE()) as age_months FROM pigs WHERE 1=1";
 $params = [];
 
 if ($statusFilter && $statusFilter !== 'all') {
     $query .= " AND status = ?";
     $params[] = $statusFilter;
 }
-
 if ($sexFilter) {
     $query .= " AND sex = ?";
     $params[] = $sexFilter;
 }
-
-if ($stageFilter) {
-    $query .= " AND stage = ?";
-    $params[] = $stageFilter;
+if ($castratedFilter !== null && $castratedFilter !== '') {
+    $query .= " AND castrated = ?";
+    $params[] = (int)$castratedFilter;
 }
-
 $query .= " ORDER BY id DESC";
 
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $pigs = $stmt->fetchAll();
+
+// Override stored stage with live age-calculated stage,
+// then apply stage filter in PHP (avoids duplicate column name in SQL)
+foreach ($pigs as &$pig) {
+    $pig['stage'] = computePigStage($pig['dob']);
+}
+unset($pig);
+
+// Filter by stage in PHP if requested
+if ($stageFilter) {
+    $pigs = array_values(array_filter($pigs, fn($p) => $p['stage'] === $stageFilter));
+}
+
 
 include 'includes/header.php';
 ?>
@@ -37,7 +49,7 @@ include 'includes/header.php';
     <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div>
             <h2>Pig Inventory Directory</h2>
-            <p>Track ear tags, life stages, growth age, and current status.</p>
+            <p>Track ear tags, life stages, male castration status, growth age, and current status.</p>
         </div>
         <a href="pig_form.php" class="btn btn-primary">+ Register New Pig</a>
     </div>
@@ -59,9 +71,11 @@ include 'includes/header.php';
                 <label style="font-size: 0.85rem; margin-bottom: 2px;">Filter Stage:</label>
                 <select name="stage" class="form-control" onchange="this.form.submit()" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
                     <option value="">All Stages</option>
-                    <option value="adult" <?php echo $stageFilter === 'adult' ? 'selected' : ''; ?>>Adult</option>
-                    <option value="weaner" <?php echo $stageFilter === 'weaner' ? 'selected' : ''; ?>>Weaner</option>
-                    <option value="piglet" <?php echo $stageFilter === 'piglet' ? 'selected' : ''; ?>>Piglet</option>
+                    <option value="piglet"   <?php echo $stageFilter === 'piglet'   ? 'selected' : ''; ?>>🐽 Piglet (0-4 weeks)</option>
+                    <option value="weaner"   <?php echo $stageFilter === 'weaner'   ? 'selected' : ''; ?>>🐖 Weaner (4-12 weeks)</option>
+                    <option value="grower"   <?php echo $stageFilter === 'grower'   ? 'selected' : ''; ?>>📈 Grower (3-5 months)</option>
+                    <option value="finisher" <?php echo $stageFilter === 'finisher' ? 'selected' : ''; ?>>🏁 Finisher (5-7 months)</option>
+                    <option value="adult"    <?php echo $stageFilter === 'adult'    ? 'selected' : ''; ?>>🐗 Adult / Breeder (7+ months)</option>
                 </select>
             </div>
             <div>
@@ -72,18 +86,26 @@ include 'includes/header.php';
                     <option value="Female" <?php echo $sexFilter === 'Female' ? 'selected' : ''; ?>>Female</option>
                 </select>
             </div>
+            <div>
+                <label style="font-size: 0.85rem; margin-bottom: 2px;">Male Type:</label>
+                <select name="castrated" class="form-control" onchange="this.form.submit()" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                    <option value="">All Males</option>
+                    <option value="0" <?php echo $castratedFilter === '0' ? 'selected' : ''; ?>>🐗 Intact Boars</option>
+                    <option value="1" <?php echo $castratedFilter === '1' ? 'selected' : ''; ?>>✂️ Castrated Barrows</option>
+                </select>
+            </div>
             <div style="margin-top: 18px;">
                 <a href="pigs.php" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Reset Filters</a>
             </div>
         </form>
     </div>
 
-    <div class="card" style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse;">
+    <div class="table-wrapper" style="border: none; box-shadow: none;">
+        <table class="data-table striped">
             <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                    <th style="padding: 1rem;">Ear Tag No</th>
-                    <th>Sex</th>
+                <tr>
+                    <th>Ear Tag No</th>
+                    <th>Sex &amp; Type</th>
                     <th>Breed</th>
                     <th>Stage</th>
                     <th>Age</th>
@@ -94,34 +116,48 @@ include 'includes/header.php';
             </thead>
             <tbody>
                 <?php foreach ($pigs as $pig): ?>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 1rem;"><strong><?php echo htmlspecialchars($pig['tag_no']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($pig['sex']); ?></td>
+                    <tr>
+                        <td>
+                            <strong><?php echo htmlspecialchars($pig['tag_no']); ?></strong>
+                            <?php if (($pig['source'] ?? '') === 'External Purchase'): ?>
+                                <span class="tbl-sub"><span class="tbl-badge blue">External</span></span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <strong><?php echo htmlspecialchars($pig['sex']); ?></strong>
+                            <?php if ($pig['sex'] === 'Male'): ?>
+                                <span class="tbl-sub">
+                                <?php if (!empty($pig['castrated'])): ?>
+                                    <span class="tbl-badge green">✂️ Castrated</span>
+                                <?php else: ?>
+                                    <span class="tbl-badge orange">🐗 Boar</span>
+                                <?php endif; ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
                         <td><?php echo htmlspecialchars($pig['breed'] ?? 'N/A'); ?></td>
                         <td style="text-transform: capitalize; font-weight: 600;"><?php echo htmlspecialchars($pig['stage']); ?></td>
                         <td><?php echo htmlspecialchars($pig['age_months']); ?> mos</td>
-                        <td style="font-size: 0.85rem; color: var(--text-muted);">
-                            S: <?php echo htmlspecialchars($pig['sire'] ?: 'N/A'); ?><br>
-                            D: <?php echo htmlspecialchars($pig['dam'] ?: 'N/A'); ?>
+                        <td>
+                            <span class="tbl-sub">S: <?php echo htmlspecialchars($pig['sire'] ?: 'N/A'); ?></span>
+                            <span class="tbl-sub">D: <?php echo htmlspecialchars($pig['dam'] ?: 'N/A'); ?></span>
                         </td>
                         <td>
                             <?php 
-                                $bg = '#E8F5E9'; $fg = '#2E7D32';
-                                if ($pig['status'] === 'sold') { $bg = '#FFF3E0'; $fg = '#E65100'; }
-                                else if ($pig['status'] === 'dead') { $bg = '#FFEBEE'; $fg = '#C62828'; }
-                                else if ($pig['status'] === 'archived') { $bg = '#ECEFF1'; $fg = '#37474F'; }
+                                $sBadge = 'green';
+                                if ($pig['status'] === 'sold') $sBadge = 'orange';
+                                else if ($pig['status'] === 'dead') $sBadge = 'red';
+                                else if ($pig['status'] === 'archived') $sBadge = 'grey';
                             ?>
-                            <span class="badge" style="padding: 4px 8px; border-radius: 4px; background: <?php echo $bg; ?>; color: <?php echo $fg; ?>;">
-                                <?php echo ucfirst(htmlspecialchars($pig['status'])); ?>
-                            </span>
+                            <span class="tbl-badge <?php echo $sBadge; ?>"><?php echo ucfirst(htmlspecialchars($pig['status'])); ?></span>
                         </td>
                         <td>
-                            <a href="pig_view.php?id=<?php echo $pig['id']; ?>" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">Manage / View &rarr;</a>
+                            <a href="pig_view.php?id=<?php echo $pig['id']; ?>" class="btn btn-outline" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;">Manage &rarr;</a>
                         </td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($pigs) === 0): ?>
-                    <tr><td colspan="8" style="text-align: center; padding: 2rem; color: var(--text-muted);">No pig records match the selected filters.</td></tr>
+                    <tr class="tbl-empty"><td colspan="8">No pig records match the selected filters.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

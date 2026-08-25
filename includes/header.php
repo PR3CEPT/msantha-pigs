@@ -1,3 +1,14 @@
+<?php
+// Run stage transition detection + system alerts on every page load (for logged-in users)
+if (isset($_SESSION['user_id'])) {
+    checkStageTransitions($pdo, $PIG_STAGE_SQL);
+    generateSystemAlerts($pdo);
+
+    // Fetch unread notification count & latest 8 for the dropdown
+    $unreadCount   = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0")->fetchColumn();
+    $notifDropdown = $pdo->query("SELECT * FROM notifications ORDER BY is_read ASC, created_at DESC LIMIT 8")->fetchAll();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,11 +53,64 @@
                     <img src="images/logo.png" alt="MIGS Logo" class="topbar-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCI+PGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjQiIGZpbGw9IiM0Q0FGNTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMjAiPk08L3RleHQ+PC9zdmc+'">
                     <div>
                         <h1 class="brand-title">Msantha Pigs Management System</h1>
-                        <p class="brand-slogan">Your Trusted Partner in Livestock & Poultry Production</p>
+                        <p class="brand-slogan">Your Trusted Partner in Livestock &amp; Poultry Production</p>
                     </div>
                 </div>
                 <div class="user-profile">
                     <?php if (isset($_SESSION['user_id'])): ?>
+
+                        <!-- ===== NOTIFICATION BELL ===== -->
+                        <div class="notif-bell-wrap" id="notifWrap">
+                            <button class="notif-bell-btn" id="notifBellBtn" aria-label="Notifications" title="System Notifications">
+                                🔔
+                                <?php if ($unreadCount > 0): ?>
+                                    <span class="notif-badge" id="notifBadge"><?php echo $unreadCount > 99 ? '99+' : $unreadCount; ?></span>
+                                <?php endif; ?>
+                            </button>
+
+                            <!-- Dropdown panel -->
+                            <div class="notif-dropdown" id="notifDropdown">
+                                <div class="notif-header">
+                                    <span>🔔 System Notifications</span>
+                                    <button class="notif-mark-all" id="notifMarkAll" title="Mark all as read">✓ Mark all read</button>
+                                </div>
+                                <div class="notif-list" id="notifList">
+                                    <?php if (empty($notifDropdown)): ?>
+                                        <div class="notif-empty">
+                                            <span style="font-size:1.8rem;">🎉</span>
+                                            <p>All clear! No new alerts.</p>
+                                        </div>
+                                    <?php else: ?>
+                                        <?php foreach ($notifDropdown as $n): ?>
+                                            <?php
+                                                $typeClass = match($n['type']) {
+                                                    'alert'   => 'notif-item-alert',
+                                                    'warning' => 'notif-item-warning',
+                                                    'success' => 'notif-item-success',
+                                                    default   => 'notif-item-info',
+                                                };
+                                                $unreadClass = $n['is_read'] ? '' : 'notif-item-unread';
+                                            ?>
+                                            <div class="notif-item <?php echo $typeClass . ' ' . $unreadClass; ?>"
+                                                 data-id="<?php echo $n['id']; ?>"
+                                                 <?php if (!empty($n['pig_id'])): ?>
+                                                     onclick="window.location='pig_view.php?id=<?php echo $n['pig_id']; ?>'"
+                                                     style="cursor:pointer;"
+                                                 <?php endif; ?>>
+                                                <div class="notif-item-title"><?php echo htmlspecialchars(ltrim($n['title'], '? ')); ?></div>
+                                                <div class="notif-item-msg"><?php echo htmlspecialchars(ltrim($n['message'], '? ')); ?></div>
+                                                <div class="notif-item-time"><?php echo date('d M Y, H:i', strtotime($n['created_at'])); ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="notif-footer">
+                                    <a href="notifications.php">View all notifications →</a>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ===== END NOTIFICATION BELL ===== -->
+
                         <span class="user-name"><?php echo htmlspecialchars($_SESSION['user_fullname']); ?> (<strong><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></strong>)</span>
                         <a href="profile.php" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Profile</a>
                         <a href="logout.php" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Logout</a>
@@ -56,3 +120,58 @@
                 </div>
             </header>
             <main class="content-area">
+
+<script>
+// Notification Bell Logic
+(function() {
+    const bell     = document.getElementById('notifBellBtn');
+    const dropdown = document.getElementById('notifDropdown');
+    const markAll  = document.getElementById('notifMarkAll');
+    const badge    = document.getElementById('notifBadge');
+
+    if (!bell || !dropdown) return;
+
+    // Toggle dropdown
+    bell.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('notif-dropdown-open');
+    });
+
+    // Close on outside click
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('notifWrap').contains(e.target)) {
+            dropdown.classList.remove('notif-dropdown-open');
+        }
+    });
+
+    // Mark all as read
+    if (markAll) {
+        markAll.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fetch('notify_read.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=mark_all'
+            }).then(() => {
+                if (badge) badge.remove();
+                document.querySelectorAll('.notif-item-unread').forEach(el => el.classList.remove('notif-item-unread'));
+                markAll.textContent = '✓ All read';
+            });
+        });
+    }
+
+    // Mark individual as read on click (if pig_id link not set)
+    document.querySelectorAll('.notif-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            const id = this.dataset.id;
+            if (!id) return;
+            fetch('notify_read.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=mark_one&id=' + id
+            });
+            this.classList.remove('notif-item-unread');
+        });
+    });
+})();
+</script>
