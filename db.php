@@ -1,5 +1,8 @@
 <?php
-session_start();
+ob_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $host   = getenv('DB_HOST') ?: '127.0.0.1';
 $port   = getenv('DB_PORT') ?: '3306';

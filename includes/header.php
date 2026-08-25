@@ -1,8 +1,11 @@
 <?php
-// Run stage transition detection + system alerts on every page load (for logged-in users)
+// Run stage transition detection + system alerts at most once every 2 minutes per session
 if (isset($_SESSION['user_id'])) {
-    checkStageTransitions($pdo, $PIG_STAGE_SQL);
-    generateSystemAlerts($pdo);
+    if (!isset($_SESSION['last_alert_check']) || (time() - $_SESSION['last_alert_check']) > 120) {
+        checkStageTransitions($pdo, $PIG_STAGE_SQL);
+        generateSystemAlerts($pdo);
+        $_SESSION['last_alert_check'] = time();
+    }
 
     // Fetch unread notification count & latest 8 for the dropdown
     $unreadCount   = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0")->fetchColumn();

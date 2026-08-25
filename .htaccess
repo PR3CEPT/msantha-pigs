@@ -1,0 +1,6 @@
+DirectoryIndex index.php dashboard.php login.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+</IfModule>

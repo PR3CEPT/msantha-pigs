@@ -8,6 +8,11 @@ RUN apt-get update && apt-get install -y \
     && a2enmod rewrite \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Configure Apache for clean URL redirects & AllowOverride
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && echo "DirectoryIndex index.php dashboard.php login.php" >> /etc/apache2/apache2.conf \
+    && echo "<Directory /var/www/html>\n    AllowOverride All\n    Require all granted\n</Directory>" >> /etc/apache2/apache2.conf
+
 # Copy project files
 COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html
