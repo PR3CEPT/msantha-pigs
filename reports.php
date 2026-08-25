@@ -282,7 +282,7 @@ include 'includes/header.php';
     </div>
 
     <!-- Active Filters Summary Banner -->
-    <div style="background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; font-size: 0.9rem; color: #1b5e20; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div class="active-filters-bar" style="background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 10px 15px; margin-bottom: 20px; font-size: 0.9rem; color: #1b5e20; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div>
             <strong>Active Report Scope:</strong>
             <?php 
@@ -329,7 +329,7 @@ include 'includes/header.php';
 
     <!-- 2. Population Breakdown Section -->
     <?php if ($incInventory && ($category === 'all' || $category === 'inventory')): ?>
-    <div class="dashboard-content" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+    <div class="dashboard-content reports-inventory-grid" style="margin-bottom: 20px;">
         <!-- Population by Stage -->
         <div class="card">
             <h3>📊 Population by Life Stage</h3>
@@ -527,7 +527,7 @@ include 'includes/header.php';
     <?php if ($incSales && ($category === 'all' || $category === 'sales')): ?>
     <div class="card" style="margin-bottom: 20px;">
         <h3 style="color: var(--primary-color);">💰 Sales &amp; Revenue Ledger</h3>
-        <div style="padding: 15px 20px; background: #E8F5E9; border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center;">
+        <div class="report-revenue-banner" style="padding: 15px 20px; background: #E8F5E9; border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
                 <h4 style="color: var(--primary-color); margin: 0;">Total Revenue Generated (Filtered Period)</h4>
                 <p style="font-size: 0.9rem; color: var(--text-muted);">Sum of all recorded live pig and meat sales</p>
