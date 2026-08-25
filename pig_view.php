@@ -315,7 +315,7 @@ include 'includes/header.php';
     <div class="dashboard-content">
         <!-- Pig Card -->
         <div class="card" style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
                 <h3 style="margin: 0; color: var(--primary-color);">📋 Pig Card</h3>
                 <button class="btn btn-outline" style="padding: 3px 10px; font-size: 0.8rem;" onclick="openModal('editPigModal')">✏️ Edit Pig Card / Tag</button>
             </div>

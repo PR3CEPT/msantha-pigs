@@ -1265,3 +1265,266 @@ select.form-control option {
         right: -60px;
     }
 }
+
+/* ==========================================================================
+   ADVANCED MOBILE RESPONSIVE ENGINE (Strictly <= 768px)
+   Does NOT alter Desktop/Laptop view (min-width: 769px)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* Prevent global horizontal viewport scrolling */
+    html, body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .layout {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    .dashboard-wrapper {
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Topbar Mobile Adjustments */
+    .topbar {
+        padding: 10px 12px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .logo-container {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        width: 100% !important;
+    }
+
+    .brand-title {
+        font-size: 0.95rem !important;
+        line-height: 1.2 !important;
+    }
+
+    .brand-slogan {
+        display: none !important;
+    }
+
+    .user-profile {
+        display: flex !important;
+        width: 100% !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        border-top: 1px solid var(--border-color);
+        padding-top: 8px;
+    }
+
+    .user-name {
+        font-size: 0.8rem !important;
+    }
+
+    /* Dashboard Header & Action Buttons */
+    .dashboard-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        margin-bottom: 15px !important;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.25rem !important;
+    }
+
+    .dashboard-header p {
+        font-size: 0.82rem !important;
+    }
+
+    .dashboard-header > div:last-child,
+    .dashboard-header div[style*="display: flex"] {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
+
+    .dashboard-header .btn, 
+    .dashboard-header a.btn, 
+    .dashboard-header button.btn {
+        flex: 1 1 calc(50% - 6px) !important;
+        text-align: center !important;
+        justify-content: center !important;
+        font-size: 0.78rem !important;
+        padding: 8px 10px !important;
+        white-space: nowrap !important;
+    }
+
+    /* Cards & Containers */
+    .card {
+        padding: 12px 14px !important;
+        margin-bottom: 15px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+    }
+
+    .dashboard-content {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+    }
+
+    /* KPI Grid on Mobile */
+    .kpi-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10px !important;
+    }
+
+    .kpi-card {
+        padding: 10px 12px !important;
+    }
+
+    .kpi-icon {
+        font-size: 1.4rem !important;
+    }
+
+    .kpi-value {
+        font-size: 1.25rem !important;
+    }
+
+    /* =========================================================
+       PIG CARD PAGE (pig_view.php) MOBILE OPTIMIZATION
+       ========================================================= */
+    .pig-card-table {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .pig-card-table tbody {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    .pig-card-table tr {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 10px 0 !important;
+        border-bottom: 1px solid #eeeeee !important;
+    }
+
+    .pig-card-table tr:last-child {
+        border-bottom: none !important;
+    }
+
+    .pig-card-table td:first-child {
+        width: 100% !important;
+        background: transparent !important;
+        font-size: 0.72rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.6px !important;
+        font-weight: 700 !important;
+        color: var(--text-muted) !important;
+        padding: 0 0 2px 0 !important;
+    }
+
+    .pig-card-table td:last-child {
+        width: 100% !important;
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        padding: 0 !important;
+        word-break: break-word !important;
+    }
+
+    /* =========================================================
+       FARM REPORTS PAGE (reports.php) MOBILE OPTIMIZATION
+       ========================================================= */
+    .report-filter-card {
+        padding: 12px !important;
+    }
+
+    .filter-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .filter-group {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .filter-group input, 
+    .filter-group select {
+        width: 100% !important;
+        font-size: 0.85rem !important;
+        padding: 8px 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    .print-official-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+
+    /* Data Tables Mobile Formatting */
+    .table-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 8px !important;
+    }
+
+    .data-table {
+        width: 100% !important;
+        font-size: 0.8rem !important;
+    }
+
+    .data-table th {
+        padding: 8px 6px !important;
+        font-size: 0.72rem !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    .data-table td {
+        padding: 8px 6px !important;
+        font-size: 0.78rem !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+
+    /* Modals on Mobile */
+    .modal-content {
+        width: 94vw !important;
+        max-width: 94vw !important;
+        padding: 1.2rem !important;
+        margin: 10px auto !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .kpi-container {
+        grid-template-columns: 1fr !important;
+    }
+
+    .dashboard-header .btn, 
+    .dashboard-header a.btn, 
+    .dashboard-header button.btn {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+}
