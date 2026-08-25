@@ -2,9 +2,6 @@
 session_start();
 
 $host   = getenv('DB_HOST') ?: '127.0.0.1';
-if ($host === 'localhost') {
-    $host = '127.0.0.1';
-}
 $port   = getenv('DB_PORT') ?: '3306';
 $dbname = getenv('DB_NAME') ?: 'msantha_pigs';
 $user   = getenv('DB_USER') ?: 'root';
@@ -15,7 +12,20 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     $pdo->exec("SET NAMES utf8mb4");
+} catch (PDOException $e) {
+    // Connection fallback: if 127.0.0.1 failed, attempt localhost Unix socket connection
+    $altHost = ($host === '127.0.0.1') ? 'localhost' : '127.0.0.1';
+    try {
+        $pdo = new PDO("mysql:host=$altHost;port=$port;dbname=$dbname;charset=utf8mb4", $user, $pass);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        $pdo->exec("SET NAMES utf8mb4");
+    } catch (PDOException $e2) {
+        die("Database Connection failed: " . $e->getMessage() . "<br>Please ensure XAMPP MySQL is running and you have imported setup.sql.");
+    }
+}
 
+try {
     // Auto-migrate database & tables to utf8mb4 to prevent notification question marks (?)
     try {
         $pdo->exec("ALTER DATABASE `$dbname` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci");
@@ -106,8 +116,9 @@ try {
         $pdo->exec("UPDATE notifications SET title = TRIM(BOTH '?' FROM title), message = TRIM(BOTH '?' FROM message) WHERE title LIKE '%?%' OR message LIKE '%?%'");
     } catch (PDOException $e) {}
 
-} catch(PDOException $e) {
-    die("Database Connection failed: " . $e->getMessage() . "<br>Please ensure XAMPP MySQL is running and you have imported setup.sql.");
+} catch (PDOException $e) {
+    // Log schema auto-migration warnings silently
+    error_log("DB auto-migration warning: " . $e->getMessage());
 }
 
 // System Activity Audit Logger Function
