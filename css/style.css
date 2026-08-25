@@ -26,70 +26,75 @@ body {
 
 /* Landing Page Styles */
 .landing-page {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: #F4F7F6;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    width: 100%;
 }
 
 .landing-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1.5rem;
     flex: 1;
     display: flex;
     flex-direction: column;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .landing-header {
+    background: #ffffff;
+    padding: 1rem 1.8rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
-.logo-container {
+.landing-logo-brand {
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
-.landing-logo, .topbar-logo {
-    height: 60px;
+.landing-logo {
+    height: 62px;
+    width: 62px;
     border-radius: 50%;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    background: #fff;
+    padding: 2px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    flex-shrink: 0;
 }
 
-.landing-main {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex: 1;
-    gap: 2rem;
+.landing-brand-info {
+    min-width: 0;
 }
 
-.hero-text h1 {
-    font-size: 3rem;
+.landing-brand-title {
     color: var(--primary-color);
-    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    margin: 0;
+    line-height: 1.25;
+    font-weight: 700;
 }
 
-.hero-text p {
-    font-size: 1.2rem;
+.landing-brand-subtitle {
     color: var(--text-muted);
-    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    margin: 0;
 }
 
-.hero-image img {
-    max-width: 100%;
-    border-radius: 20px;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-}
-
-.landing-footer {
-    text-align: center;
-    padding-top: 2rem;
-    color: var(--text-muted);
+.landing-login-btn {
+    padding: 0.8rem 1.8rem;
+    font-size: 1rem;
+    flex-shrink: 0;
 }
 
 /* Buttons */
@@ -238,34 +243,109 @@ select.form-control option {
     background: linear-gradient(135deg, rgba(20, 75, 25, 0.88) 0%, rgba(30, 95, 35, 0.92) 100%), 
                 url('../images/livestock_farm_bg.png') center/cover no-repeat;
     color: #ffffff;
-    padding: 3.5rem 2.5rem;
+    padding: 3rem 2.5rem;
     border-radius: 20px;
     margin-bottom: 2rem;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2rem;
     position: relative;
     overflow: hidden;
 }
 
-.landing-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin-bottom: 2rem;
+.landing-hero-text {
+    flex: 1 1 320px;
+    z-index: 2;
+    min-width: 0;
 }
 
-.service-card {
+.landing-hero-badge {
+    background: rgba(255,255,255,0.25);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    backdrop-filter: blur(4px);
+    display: inline-block;
+}
+
+.landing-hero-title {
+    font-size: 2.3rem;
+    margin: 1rem 0 0.5rem;
+    line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    color: #ffffff;
+}
+
+.landing-hero-desc {
+    font-size: 1.12rem;
+    opacity: 0.95;
+    margin-bottom: 1.2rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    line-height: 1.55;
+}
+
+.landing-hero-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.landing-hero-cta {
     background: #ffffff;
-    padding: 1.5rem;
-    border-radius: 12px;
-    border-left: 4px solid var(--primary-color);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    margin-bottom: 1rem;
+    color: var(--primary-color);
+    font-weight: 700;
+    padding: 0.8rem 1.6rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.25s ease;
 }
 
-.service-card h4 {
+.landing-hero-cta:hover {
+    background: #f0fdf4;
+    color: #1b5e20;
+    transform: translateY(-2px);
+}
+
+.landing-hero-img-wrap {
+    flex: 1 1 320px;
+    text-align: center;
+    z-index: 2;
+    min-width: 0;
+}
+
+.landing-hero-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 16px;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.35);
+    border: 3px solid #ffffff;
+}
+
+.landing-about-card {
+    margin-bottom: 2rem;
+    border-top: 4px solid var(--primary-color);
+    padding: 1.8rem;
+}
+
+.landing-section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
     color: var(--primary-color);
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.landing-about-text {
+    font-size: 1.02rem;
+    line-height: 1.7;
+    color: var(--text-main);
+    margin-bottom: 1rem;
 }
 
 .quote-box {
@@ -277,6 +357,84 @@ select.form-control option {
     font-style: italic;
     color: #1B5E20;
     font-weight: 600;
+}
+
+.quote-text {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.55;
+}
+
+.landing-services-section {
+    margin-bottom: 2rem;
+}
+
+.landing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.service-card {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border-left: 4px solid var(--primary-color);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+}
+
+.service-card h4 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.service-card p {
+    color: var(--text-main);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.landing-service-full {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* User Account Management Components */
+.user-mgmt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.user-mgmt-card {
+    padding: 1.25rem;
+}
+
+.user-table-wrapper {
+    display: block;
+    width: 100%;
+}
+
+.user-table {
+    width: 100%;
+}
+
+.user-cards-mobile {
+    display: none;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 1.5rem;
 }
 
 /* Dashboard Layout */
@@ -872,7 +1030,17 @@ select.form-control option {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
-    min-width: 560px;
+}
+
+.table-wrapper > .data-table {
+    min-width: 480px;
+}
+
+.table-wrapper > .data-table.compact,
+.table-wrapper > .data-table.pig-card-table,
+.table-wrapper > .data-table.fit-table,
+.pig-card-table {
+    min-width: 0 !important;
 }
 
 /* Header row */
@@ -1264,20 +1432,57 @@ select.form-control option {
 }
 .notif-footer a:hover { text-decoration: underline; }
 
-/* Mobile Notification Dropdown */
-@media (max-width: 600px) {
-    .notif-dropdown {
-        width: min(340px, calc(100vw - 24px)) !important;
-        right: -10px !important;
-        left: auto !important;
-    }
-}
-
 /* ==========================================================================
    UNIFIED MOBILE RESPONSIVE ENGINE (Strictly <= 768px)
    Does NOT alter Desktop/Laptop view (min-width: 769px)
    ========================================================================== */
 @media (max-width: 768px) {
+
+    /* ── NOTIFICATION DROPDOWN ON MOBILE ── */
+    .notif-dropdown {
+        position: fixed !important;
+        top: 56px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        max-width: calc(100vw - 20px) !important;
+        max-height: 82vh !important;
+        margin: 0 auto !important;
+        border-radius: 14px !important;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+        z-index: 10001 !important;
+        box-sizing: border-box !important;
+    }
+
+    .notif-header {
+        padding: 12px 14px 10px !important;
+        font-size: 0.88rem !important;
+    }
+
+    .notif-list {
+        max-height: calc(80vh - 95px) !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .notif-item {
+        padding: 10px 14px !important;
+    }
+
+    .notif-item-title {
+        font-size: 0.85rem !important;
+        line-height: 1.3 !important;
+        word-break: break-word !important;
+    }
+
+    .notif-item-msg {
+        font-size: 0.78rem !important;
+        line-height: 1.4 !important;
+        word-break: break-word !important;
+    }
+
+    .notif-item-time {
+        font-size: 0.7rem !important;
+    }
 
     /* ── 1. GLOBAL VIEWPORT & OVERFLOW GUARDS ── */
     html, body {
@@ -1829,11 +2034,180 @@ select.form-control option {
         gap: 6px !important;
     }
 
-    /* ── 10. LANDING & PUBLIC FOOTER ON MOBILE ── */
-    .modern-landing-footer {
-        padding: 1.5rem 1.25rem 1rem !important;
+    /* ── 10. LANDING PAGE & PUBLIC FOOTER ON MOBILE ── */
+    .landing-page {
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
+    .landing-container {
+        padding: 10px 10px 20px !important;
+        width: 100% !important;
+        max-width: 100vw !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .landing-header {
+        padding: 12px 14px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        margin-bottom: 1rem !important;
+        border-radius: 12px !important;
+    }
+
+    .landing-logo-brand {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    .landing-logo {
+        height: 48px !important;
+        width: 48px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .landing-brand-title {
+        font-size: 0.95rem !important;
+        line-height: 1.25 !important;
+    }
+
+    .landing-brand-subtitle {
+        font-size: 0.74rem !important;
+    }
+
+    .landing-login-btn {
+        width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.92rem !important;
+        box-sizing: border-box !important;
+    }
+
+    .landing-hero-banner {
+        padding: 1.4rem 1rem !important;
         border-radius: 14px !important;
-        margin-top: 2rem !important;
+        margin-bottom: 1rem !important;
+        flex-direction: column !important;
+        gap: 1.25rem !important;
+        text-align: center !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .landing-hero-text {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 1 1 100% !important;
+    }
+
+    .landing-hero-badge {
+        font-size: 0.72rem !important;
+        padding: 3px 10px !important;
+    }
+
+    .landing-hero-title {
+        font-size: 1.35rem !important;
+        line-height: 1.25 !important;
+        margin: 0.65rem 0 0.4rem !important;
+        word-break: break-word !important;
+    }
+
+    .landing-hero-desc {
+        font-size: 0.88rem !important;
+        line-height: 1.45 !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .landing-hero-actions {
+        justify-content: center !important;
+        width: 100% !important;
+    }
+
+    .landing-hero-cta {
+        width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.92rem !important;
+        box-sizing: border-box !important;
+    }
+
+    .landing-hero-img-wrap {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 1 1 100% !important;
+    }
+
+    .landing-hero-img {
+        max-width: 100% !important;
+        border-radius: 12px !important;
+    }
+
+    .landing-about-card {
+        padding: 14px 12px !important;
+        margin-bottom: 1rem !important;
+        border-radius: 10px !important;
+    }
+
+    .landing-section-title {
+        font-size: 1.15rem !important;
+        margin-bottom: 0.6rem !important;
+    }
+
+    .landing-about-text {
+        font-size: 0.88rem !important;
+        line-height: 1.55 !important;
+        margin-bottom: 0.6rem !important;
+    }
+
+    .quote-box {
+        padding: 10px 12px !important;
+        margin: 0.8rem 0 !important;
+        border-left-width: 3px !important;
+    }
+
+    .quote-text {
+        font-size: 0.88rem !important;
+        line-height: 1.45 !important;
+    }
+
+    .landing-grid {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .service-card {
+        padding: 12px 12px !important;
+        border-radius: 10px !important;
+        margin-bottom: 0 !important;
+    }
+
+    .service-card h4 {
+        font-size: 0.95rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .service-card p {
+        font-size: 0.85rem !important;
+        line-height: 1.45 !important;
+    }
+
+    .landing-service-full {
+        max-width: 100% !important;
+        margin-top: 10px !important;
+    }
+
+    .modern-landing-footer {
+        padding: 1.25rem 1rem 1rem !important;
+        border-radius: 14px !important;
+        margin-top: 1.5rem !important;
         width: 100% !important;
         box-sizing: border-box !important;
     }
@@ -1842,6 +2216,11 @@ select.form-control option {
         display: grid !important;
         grid-template-columns: 1fr !important;
         gap: 1.25rem !important;
+    }
+
+    .contact-pill .value {
+        word-break: break-word !important;
+        font-size: 0.82rem !important;
     }
 
     .modern-footer-container {
@@ -1860,6 +2239,115 @@ select.form-control option {
     .modern-footer-meta {
         flex-wrap: wrap !important;
         gap: 6px !important;
+    }
+
+    /* ── 11. USER MANAGEMENT MOBILE RESPONSIVE ENGINE ── */
+    .user-mgmt-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
+    .user-add-btn {
+        width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 9px 12px !important;
+        font-size: 0.85rem !important;
+        box-sizing: border-box !important;
+    }
+
+    .user-mgmt-card {
+        padding: 10px 8px !important;
+    }
+
+    .user-table-wrapper {
+        display: none !important;
+    }
+
+    .user-cards-mobile {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+
+    .user-card-item {
+        background: #ffffff;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .user-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 6px;
+    }
+
+    .user-card-username {
+        font-size: 0.95rem;
+        color: #111;
+    }
+
+    .user-card-id {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        margin-left: 4px;
+    }
+
+    .user-card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.84rem;
+    }
+
+    .user-card-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .user-card-label {
+        color: var(--text-muted);
+        font-size: 0.78rem;
+    }
+
+    .user-card-val {
+        font-weight: 600;
+        color: #333;
+        word-break: break-word;
+        text-align: right;
+    }
+
+    .user-card-footer {
+        border-top: 1px dashed var(--border-color);
+        padding-top: 8px;
+        margin-top: 2px;
+    }
+
+    .modal-actions {
+        flex-direction: column-reverse !important;
+        gap: 8px !important;
+        margin-top: 1.25rem !important;
+    }
+
+    .modal-actions .btn {
+        width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 10px !important;
+        font-size: 0.9rem !important;
+        box-sizing: border-box !important;
     }
 }
 
@@ -1881,5 +2369,10 @@ select.form-control option {
         max-width: 95vw !important;
         padding: 1rem 0.85rem !important;
     }
+
+    .login-container {
+        padding: 1.5rem 1.2rem !important;
+    }
 }
+
 

@@ -72,12 +72,12 @@ include 'includes/header.php';
 ?>
 
 <div class="dashboard-wrapper">
-    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div class="dashboard-header user-mgmt-header">
         <div>
             <h2>User Account Management</h2>
             <p>Admin control panel for managing farm system users and permissions.</p>
         </div>
-        <button class="btn btn-primary" onclick="openModal('addUserModal')">+ Add New User Account</button>
+        <button class="btn btn-primary user-add-btn" onclick="openModal('addUserModal')">+ Add New User Account</button>
     </div>
 
     <?php if ($msg): ?>
@@ -87,38 +87,80 @@ include 'includes/header.php';
         <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
 
-    <div class="card">
-        <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
-                    <th style="padding: 1rem;">ID</th>
-                    <th>Username</th>
-                    <th>Full Name</th>
-                    <th>Role</th>
-                    <th>Phone</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="card user-mgmt-card">
+        <!-- Desktop & Tablet Table View -->
+        <div class="table-wrapper user-table-wrapper">
+            <table class="data-table striped middle user-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>Username</th>
+                        <th>Full Name</th>
+                        <th>Role</th>
+                        <th>Phone</th>
+                        <th style="text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($users)): ?>
+                        <tr class="tbl-empty"><td colspan="6">No user accounts found.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($users as $u): ?>
+                            <tr>
+                                <td>#<?php echo $u['id']; ?></td>
+                                <td><strong><?php echo htmlspecialchars($u['username']); ?></strong></td>
+                                <td><?php echo htmlspecialchars($u['full_name']); ?></td>
+                                <td>
+                                    <span class="badge" style="padding: 4px 8px; border-radius: 4px; font-weight: 600; background: <?php echo $u['role'] === 'admin' ? '#E3F2FD' : '#F3E5F5'; ?>; color: <?php echo $u['role'] === 'admin' ? '#1565C0' : '#7B1FA2'; ?>;">
+                                        <?php echo ucfirst(htmlspecialchars($u['role'])); ?>
+                                    </span>
+                                </td>
+                                <td><?php echo htmlspecialchars($u['phone'] ?: 'N/A'); ?></td>
+                                <td style="text-align: right;">
+                                    <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; white-space: nowrap;" 
+                                        onclick='editUser(<?php echo json_encode($u); ?>)'>✏️ Edit / Reset Password</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Dedicated Mobile Card List (Screen Width <= 768px) -->
+        <div class="user-cards-mobile">
+            <?php if (empty($users)): ?>
+                <div class="text-center" style="padding: 2rem; color: var(--text-muted);">No user accounts found.</div>
+            <?php else: ?>
                 <?php foreach ($users as $u): ?>
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 1rem;"><?php echo $u['id']; ?></td>
-                        <td><strong><?php echo htmlspecialchars($u['username']); ?></strong></td>
-                        <td><?php echo htmlspecialchars($u['full_name']); ?></td>
-                        <td>
-                            <span class="badge" style="padding: 4px 8px; border-radius: 4px; background: <?php echo $u['role'] === 'admin' ? '#E3F2FD' : '#F3E5F5'; ?>; color: <?php echo $u['role'] === 'admin' ? '#1565C0' : '#7B1FA2'; ?>;">
+                    <div class="user-card-item">
+                        <div class="user-card-header">
+                            <div>
+                                <strong class="user-card-username"><?php echo htmlspecialchars($u['username']); ?></strong>
+                                <span class="user-card-id">#<?php echo $u['id']; ?></span>
+                            </div>
+                            <span class="badge" style="padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem; background: <?php echo $u['role'] === 'admin' ? '#E3F2FD' : '#F3E5F5'; ?>; color: <?php echo $u['role'] === 'admin' ? '#1565C0' : '#7B1FA2'; ?>;">
                                 <?php echo ucfirst(htmlspecialchars($u['role'])); ?>
                             </span>
-                        </td>
-                        <td><?php echo htmlspecialchars($u['phone'] ?: 'N/A'); ?></td>
-                        <td>
-                            <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" 
-                                onclick='editUser(<?php echo json_encode($u); ?>)'>Edit / Reset Password</button>
-                        </td>
-                    </tr>
+                        </div>
+                        <div class="user-card-body">
+                            <div class="user-card-row">
+                                <span class="user-card-label">Full Name:</span>
+                                <span class="user-card-val"><?php echo htmlspecialchars($u['full_name']); ?></span>
+                            </div>
+                            <div class="user-card-row">
+                                <span class="user-card-label">Phone:</span>
+                                <span class="user-card-val"><?php echo htmlspecialchars($u['phone'] ?: 'N/A'); ?></span>
+                            </div>
+                        </div>
+                        <div class="user-card-footer">
+                            <button class="btn btn-outline btn-block" style="padding: 0.55rem 0.8rem; font-size: 0.82rem; text-align: center;"
+                                onclick='editUser(<?php echo json_encode($u); ?>)'>✏️ Edit / Reset Password</button>
+                        </div>
+                    </div>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 
@@ -154,7 +196,7 @@ include 'includes/header.php';
                 <label for="new_pass">Initial Password</label>
                 <input type="password" id="new_pass" name="password" class="form-control" required>
             </div>
-            <div style="text-align: right; margin-top: 1.5rem;">
+            <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
                 <button type="submit" class="btn btn-primary">Create User Account</button>
             </div>
@@ -195,7 +237,7 @@ include 'includes/header.php';
                 <label for="edit_pass">Reset Password (Optional)</label>
                 <input type="password" id="edit_pass" name="password" class="form-control" placeholder="Leave empty to keep current password">
             </div>
-            <div style="text-align: right; margin-top: 1.5rem;">
+            <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
                 <button type="submit" class="btn btn-primary">Update User Account</button>
             </div>

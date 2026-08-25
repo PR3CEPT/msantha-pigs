@@ -170,6 +170,22 @@ include 'includes/header.php';
     border-radius: 6px;
     font-size: 0.9rem;
 }
+@media (max-width: 768px) {
+    .filter-row {
+        flex-direction: column !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+    .filter-group {
+        min-width: 100% !important;
+        width: 100% !important;
+        flex: 1 1 100% !important;
+    }
+    .filter-group input, .filter-group select {
+        font-size: 16px !important;
+        width: 100% !important;
+    }
+}
 .toggle-chip {
     display: inline-flex;
     align-items: center;
