@@ -444,10 +444,10 @@ select.form-control option {
 }
 
 .sidebar {
-    width: 250px;
+    width: 220px;
     background-color: var(--sidebar-bg);
     color: var(--sidebar-text);
-    padding: 2rem 0;
+    padding: 1.25rem 0;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
     position: fixed;
     height: 100vh;
@@ -457,22 +457,27 @@ select.form-control option {
 }
 
 .sidebar-header {
-    padding: 0 2rem 2rem;
+    padding: 0 1.25rem 1rem;
     border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h2 {
+    font-size: 1.15rem;
 }
 
 .sidebar-nav {
     list-style: none;
-    margin-top: 1rem;
+    margin-top: 0.75rem;
 }
 
 .sidebar-nav li a {
     display: block;
-    padding: 1rem 2rem;
+    padding: 0.7rem 1.25rem;
     color: rgba(255,255,255,0.8);
     text-decoration: none;
     transition: all 0.2s;
     font-weight: 500;
+    font-size: 0.88rem;
 }
 
 .sidebar-nav li a:hover, .sidebar-nav li a.active {
@@ -483,14 +488,15 @@ select.form-control option {
 
 .main-content {
     flex: 1;
-    margin-left: 250px;
+    margin-left: 220px;
     display: flex;
     flex-direction: column;
 }
 
 .topbar {
     background-color: #fff;
-    padding: 0.75rem 2rem;
+    padding: 0.5rem 1.75rem;
+    min-height: 52px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -504,27 +510,27 @@ select.form-control option {
     display: none;
     background: transparent;
     border: none;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: var(--primary-color);
     cursor: pointer;
-    margin-right: 1rem;
+    margin-right: 0.75rem;
 }
 
 .logo-container {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     min-width: 0;
 }
 
 .topbar-logo,
 .logo-container img {
-    height: 48px !important;
-    width: 48px !important;
-    max-height: 48px !important;
-    max-width: 48px !important;
-    min-height: 48px !important;
-    min-width: 48px !important;
+    height: 38px !important;
+    width: 38px !important;
+    max-height: 38px !important;
+    max-width: 38px !important;
+    min-height: 38px !important;
+    min-width: 38px !important;
     border-radius: 50% !important;
     object-fit: cover !important;
     flex-shrink: 0 !important;
@@ -539,82 +545,94 @@ select.form-control option {
 }
 
 .brand-title {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--primary-color);
     margin: 0;
-    line-height: 1.25;
+    line-height: 1.2;
 }
 
 .brand-slogan {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
-    margin: 2px 0 0 0;
-    line-height: 1.2;
+    margin: 1px 0 0 0;
+    line-height: 1.15;
 }
 
 .user-profile {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    font-size: 0.85rem;
 }
 
 .content-area {
-    padding: 2rem;
+    padding: 1.25rem 1.75rem;
     flex: 1;
 }
 
 /* Dashboard Specifics */
 .dashboard-header {
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem;
+}
+
+.dashboard-header h2 {
+    font-size: 1.35rem;
+    margin-bottom: 2px;
+}
+
+.dashboard-header p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
 }
 
 .kpi-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
 }
 
 .kpi-card {
     background: var(--card-bg);
-    padding: 1.5rem;
-    border-radius: 15px;
+    padding: 0.9rem 1.15rem;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    gap: 0.9rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
     text-decoration: none;
     color: inherit;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     border: 1px solid var(--border-color);
 }
 
 .kpi-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.08);
 }
 
 .kpi-icon {
-    font-size: 2.5rem;
+    font-size: 1.6rem;
     background: rgba(76, 175, 80, 0.1);
-    width: 60px;
-    height: 60px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 10px;
+    flex-shrink: 0;
 }
 
 .kpi-details h3 {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .kpi-value {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary-color);
 }
@@ -622,7 +640,7 @@ select.form-control option {
 .dashboard-content {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 2rem;
+    gap: 1.25rem;
 }
 
 /* 2-column equal grid — used in reports population breakdown */
@@ -633,16 +651,18 @@ select.form-control option {
 
 .card {
     background: #fff;
-    padding: 2rem;
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    margin-bottom: 1.25rem;
 }
 
 .card h3 {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.85rem;
     color: var(--primary-color);
     border-bottom: 2px solid var(--bg-color);
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
+    font-size: 1.05rem;
 }
 
 .action-buttons {

@@ -53,7 +53,7 @@ if (isset($_SESSION['user_id'])) {
                     <?php if (isset($_SESSION['user_id'])): ?>
                         <button class="mobile-toggle-btn" id="mobileToggle" aria-label="Toggle navigation">☰</button>
                     <?php endif; ?>
-                    <img src="images/logo.png" alt="MIGS Logo" class="topbar-logo" width="48" height="48" style="width: 48px; height: 48px; min-width: 48px; max-width: 48px; min-height: 48px; max-height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCI+PGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjQiIGZpbGw9IiM0Q0FGNTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMjAiPk08L3RleHQ+PC9zdmc+'">
+                    <img src="images/logo.png" alt="MIGS Logo" class="topbar-logo" width="38" height="38" style="width: 38px; height: 38px; min-width: 38px; max-width: 38px; min-height: 38px; max-height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCI+PGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjQiIGZpbGw9IiM0Q0FGNTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMjAiPk08L3RleHQ+PC9zdmc+'">
                     <div class="brand-info">
                         <h1 class="brand-title">Msantha Pigs Management System</h1>
                         <p class="brand-slogan">Your Trusted Partner in Livestock &amp; Poultry Production</p>
