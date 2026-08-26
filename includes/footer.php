@@ -5,7 +5,7 @@
                 <div class="modern-landing-footer-top">
                     <div class="modern-landing-footer-brand">
                         <div class="brand-header">
-                            <img src="images/logo.png" alt="MIGS Logo" class="modern-landing-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCI+PGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjQiIGZpbGw9IiM0Q0FGNTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMjAiPk08L3RleHQ+PC9zdmc+'">
+                            <img src="images/logo.png" alt="MIGS Logo" class="modern-landing-logo" width="48" height="48" style="width: 48px; height: 48px; min-width: 48px; max-width: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0; display: block;" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCI+PGNpcmNsZSBjeD0iMjUiIGN5PSIyNSIgcj0iMjQiIGZpbGw9IiM0Q0FGNTAiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZmlsbD0id2hpdGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMjAiPk08L3RleHQ+PC9zdmc+'">
                             <div>
                                 <h3>Msantha Investments &amp; General Suppliers</h3>
                                 <p class="brand-slogan">Your Trusted Partner in Livestock &amp; Poultry Production</p>
