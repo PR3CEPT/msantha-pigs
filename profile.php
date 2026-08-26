@@ -91,17 +91,41 @@ include 'includes/header.php';
             <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Leave password fields empty if you do not wish to change your current password.</p>
             <div class="form-group">
                 <label for="new_password">New Password</label>
-                <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Enter new password">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="new_password" name="new_password" class="form-control" placeholder="Enter new password" style="padding-right: 42px;">
+                    <button type="button" onclick="togglePassVisibility('new_password', this)" aria-label="Show password" title="Show password" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #6b7280; padding: 6px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <span>👁️</span>
+                    </button>
+                </div>
             </div>
             <div class="form-group">
                 <label for="confirm_password">Confirm New Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm new password">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm new password" style="padding-right: 42px;">
+                    <button type="button" onclick="togglePassVisibility('confirm_password', this)" aria-label="Show password" title="Show password" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #6b7280; padding: 6px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                        <span>👁️</span>
+                    </button>
+                </div>
             </div>
             <div style="margin-top: 1.5rem;">
                 <button type="submit" class="btn btn-primary">Save Profile Changes</button>
             </div>
         </form>
     </div>
+
+    <script>
+        function togglePassVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('span');
+            if (input && icon) {
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                icon.textContent = isPassword ? '🙈' : '👁️';
+                btn.title = isPassword ? 'Hide password' : 'Show password';
+                btn.setAttribute('aria-label', btn.title);
+            }
+        }
+    </script>
 </div>
 
 <?php include 'includes/footer.php'; ?>

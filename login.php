@@ -62,7 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                    <div style="position: relative; display: flex; align-items: center;">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required style="padding-right: 42px;">
+                        <button type="button" id="togglePasswordBtn" aria-label="Show password" title="Show password" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1.15rem; color: #6b7280; padding: 6px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2;">
+                            <span id="eyeIcon">👁️</span>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block" style="padding: 0.9rem; font-size: 1.05rem; font-weight: 700; margin-top: 1rem;">Login to Dashboard &rarr;</button>
             </form>
@@ -71,6 +76,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <a href="index.php" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">&larr; Back to Home</a>
             </div>
         </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const toggleBtn = document.getElementById('togglePasswordBtn');
+                const passwordInput = document.getElementById('password');
+                const eyeIcon = document.getElementById('eyeIcon');
+                
+                if (toggleBtn && passwordInput && eyeIcon) {
+                    toggleBtn.addEventListener('click', function() {
+                        const isPassword = passwordInput.getAttribute('type') === 'password';
+                        passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+                        eyeIcon.textContent = isPassword ? '🙈' : '👁️';
+                        const newTitle = isPassword ? 'Hide password' : 'Show password';
+                        toggleBtn.setAttribute('title', newTitle);
+                        toggleBtn.setAttribute('aria-label', newTitle);
+                    });
+                }
+            });
+        </script>
+    </div>
 
 
     </div>

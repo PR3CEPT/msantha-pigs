@@ -194,7 +194,10 @@ include 'includes/header.php';
             </div>
             <div class="form-group">
                 <label for="new_pass">Initial Password</label>
-                <input type="password" id="new_pass" name="password" class="form-control" required>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="new_pass" name="password" class="form-control" required style="padding-right: 42px;">
+                    <button type="button" onclick="togglePassVisibility('new_pass', this)" aria-label="Show password" title="Show password" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #6b7280; padding: 6px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2;"><span>👁️</span></button>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeModal('addUserModal')">Cancel</button>
@@ -235,7 +238,10 @@ include 'includes/header.php';
             </div>
             <div class="form-group">
                 <label for="edit_pass">Reset Password (Optional)</label>
-                <input type="password" id="edit_pass" name="password" class="form-control" placeholder="Leave empty to keep current password">
+                <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="edit_pass" name="password" class="form-control" placeholder="Leave empty to keep current password" style="padding-right: 42px;">
+                    <button type="button" onclick="togglePassVisibility('edit_pass', this)" aria-label="Show password" title="Show password" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #6b7280; padding: 6px; line-height: 1; display: flex; align-items: center; justify-content: center; z-index: 2;"><span>👁️</span></button>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-outline" onclick="closeModal('editUserModal')">Cancel</button>
@@ -262,6 +268,18 @@ include 'includes/header.php';
         document.getElementById('edit_phone').value = user.phone || '';
         document.getElementById('edit_pass').value = '';
         openModal('editUserModal');
+    }
+
+    function togglePassVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('span');
+        if (input && icon) {
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.textContent = isPassword ? '🙈' : '👁️';
+            btn.title = isPassword ? 'Hide password' : 'Show password';
+            btn.setAttribute('aria-label', btn.title);
+        }
     }
 </script>
 
