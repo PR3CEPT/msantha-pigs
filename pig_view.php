@@ -289,12 +289,12 @@ include 'includes/header.php';
 
 <div class="dashboard-wrapper">
 
-    <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+    <div class="dashboard-header pig-view-header">
         <div>
             <h2>Pig Details: <?php echo htmlspecialchars($pig['tag_no']); ?></h2>
             <p>Stage: <span style="text-transform: capitalize; font-weight: 600;"><?php echo htmlspecialchars($pig['stage']); ?></span> | Status: <span style="font-weight: 600; color: var(--primary-color);"><?php echo htmlspecialchars($pig['status']); ?></span></p>
         </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="pig-view-actions">
             <button class="btn btn-warning" onclick="openModal('editPigModal')">✏️ Edit Details / Update Tag</button>
             <button class="btn btn-primary" onclick="openModal('growthModal')">+ Log Weight</button>
             <button class="btn btn-outline" onclick="openModal('vacModal')">+ Log Health</button>
@@ -315,9 +315,8 @@ include 'includes/header.php';
     <div class="dashboard-content">
         <!-- Pig Card -->
         <div class="card" style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
-                <h3 style="margin: 0; color: var(--primary-color);">📋 Pig Card</h3>
-                <button class="btn btn-outline" style="padding: 3px 10px; font-size: 0.8rem;" onclick="openModal('editPigModal')">✏️ Edit Pig Card / Tag</button>
+            <div style="margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
+                <h3 style="margin: 0; color: var(--primary-color);">📋 Pig Card Details</h3>
             </div>
 
             <div class="table-wrapper" style="border: none; box-shadow: none;">

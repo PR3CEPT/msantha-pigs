@@ -598,6 +598,22 @@ select.form-control option {
     margin-bottom: 1.25rem;
 }
 
+.pig-view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+}
+
+.pig-view-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .dashboard-header h2 {
     font-size: 1.35rem;
     margin-bottom: 2px;
@@ -2424,6 +2440,37 @@ select.form-control option {
         font-size: 0.9rem !important;
         box-sizing: border-box !important;
     }
+
+    /* Pig View Page Mobile Alignment */
+    .pig-view-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    .pig-view-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    .pig-view-actions .btn,
+    .pig-view-actions a.btn,
+    .pig-view-actions button.btn {
+        flex: 1 1 calc(50% - 4px) !important;
+        text-align: center !important;
+        justify-content: center !important;
+        min-width: 0 !important;
+        padding: 8px 6px !important;
+        font-size: 0.78rem !important;
+        box-sizing: border-box !important;
+    }
+
+    .pig-card-table td {
+        padding: 8px 10px !important;
+        font-size: 0.84rem !important;
+    }
 }
 
 /* ── EXTRA SMALL MOBILE DEVICES (<= 480px) ── */
@@ -2434,7 +2481,10 @@ select.form-control option {
 
     .dashboard-header .btn, 
     .dashboard-header a.btn, 
-    .dashboard-header button.btn {
+    .dashboard-header button.btn,
+    .pig-view-actions .btn,
+    .pig-view-actions a.btn,
+    .pig-view-actions button.btn {
         flex: 1 1 100% !important;
         width: 100% !important;
     }
