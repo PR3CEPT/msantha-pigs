@@ -115,8 +115,8 @@ if (isset($_SESSION['user_id'])) {
                         <!-- ===== END NOTIFICATION BELL ===== -->
 
                         <span class="user-name"><?php echo htmlspecialchars($_SESSION['user_fullname']); ?> (<strong><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></strong>)</span>
-                        <a href="profile.php" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Profile</a>
-                        <a href="logout.php" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Logout</a>
+                        <a href="profile.php" class="btn btn-outline" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;" title="My Profile">👤 Profile</a>
+                        <a href="logout.php" class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px;" title="Logout">🚪 Logout</a>
                     <?php else: ?>
                         <a href="login.php" class="btn btn-primary">Login</a>
                     <?php endif; ?>
