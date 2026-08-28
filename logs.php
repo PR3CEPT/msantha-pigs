@@ -196,8 +196,13 @@ include 'includes/header.php';
 <div class="dashboard-wrapper">
     <div class="dashboard-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div>
-            <h2>System Activity Audit Logs</h2>
-            <p>Real-time system audit trial tracking user logins, inventory events, health records, breeding, and security updates.</p>
+            <h2>📋 System Activity Audit Logs</h2>
+            <p>
+                Real-time system audit trail tracking user logins, inventory events, health records, breeding, and revenue transactions.
+                <?php if ($_SESSION['user_role'] === 'clerk'): ?>
+                    <span class="badge" style="background:#EDE7F6; color:#512DA8; font-weight:600; padding:3px 8px; border-radius:4px; margin-left:4px;">👤 Clerk Audit Log Access</span>
+                <?php endif; ?>
+            </p>
         </div>
         <a href="logs.php?<?php echo http_build_query(array_merge($_GET, ['export' => 'csv'])); ?>" class="btn btn-primary" style="display: flex; align-items: center; gap: 6px;">
             <span>📥 Export Logs to CSV</span>

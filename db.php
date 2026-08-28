@@ -183,6 +183,21 @@ try {
         $pdo->exec("ALTER TABLE breeding_records ADD COLUMN weaned_count INT NULL");
     }
 
+    // Ensure 'session_token' column exists in users table
+    try {
+        $pdo->query("SELECT session_token FROM users LIMIT 1");
+    } catch (PDOException $e) {
+        $pdo->exec("ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL");
+    }
+
+    // Ensure 'purchase_price' and 'vendor' columns exist in pigs table
+    try {
+        $pdo->query("SELECT purchase_price FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        $pdo->exec("ALTER TABLE pigs ADD COLUMN purchase_price DECIMAL(10,2) NULL");
+        $pdo->exec("ALTER TABLE pigs ADD COLUMN vendor VARCHAR(255) NULL");
+    }
+
     // Ensure 'activity_logs' table exists
     try {
         $pdo->query("SELECT 1 FROM activity_logs LIMIT 1");
@@ -263,11 +278,31 @@ function logActivity($pdo, $action, $description, $userId = null, $username = nu
     }
 }
 
-// Authentication Check function
+// Authentication Check function (Single Session Enforcement)
 function requireLogin() {
+    global $pdo;
     if (!isset($_SESSION['user_id'])) {
         header("Location: login.php");
         exit();
+    }
+
+    // Validate single concurrent session per user
+    if (isset($_SESSION['session_token']) && isset($pdo)) {
+        try {
+            $stmt = $pdo->prepare("SELECT session_token FROM users WHERE id = ?");
+            $stmt->execute([$_SESSION['user_id']]);
+            $dbToken = $stmt->fetchColumn();
+
+            if ($dbToken !== false && $dbToken !== null && $dbToken !== '' && $dbToken !== $_SESSION['session_token']) {
+                // Session invalid: user logged in on another device or browser
+                session_unset();
+                session_destroy();
+                header("Location: login.php?error=concurrent_session");
+                exit();
+            }
+        } catch (Exception $e) {
+            // Fail open if transient DB issue during check
+        }
     }
 }
 

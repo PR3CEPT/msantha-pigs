@@ -65,17 +65,28 @@ $maleCastratedStmt = $pdo->prepare("SELECT castrated, COUNT(*) as count FROM pig
 $maleCastratedStmt->execute($pigParams);
 $maleCastratedList = $maleCastratedStmt->fetchAll();
 
-// Sales Query
+// Sales & Financial Queries
 $salesWhere = ["1=1"];
 $salesParams = [];
 if (!empty($startDate)) { $salesWhere[] = "date >= ?"; $salesParams[] = $startDate; }
 if (!empty($endDate)) { $salesWhere[] = "date <= ?"; $salesParams[] = $endDate; }
 
-$totalSalesStmt = $pdo->prepare("SELECT SUM(amount) FROM sales WHERE " . implode(' AND ', $salesWhere));
-$totalSalesStmt->execute($salesParams);
-$totalSales = $totalSalesStmt->fetchColumn() ?: 0;
+$liveSalesStmt = $pdo->prepare("SELECT SUM(amount) FROM sales WHERE type = 'live_pig' AND " . implode(' AND ', $salesWhere));
+$liveSalesStmt->execute($salesParams);
+$totalLiveSales = $liveSalesStmt->fetchColumn() ?: 0;
 
-$salesListStmt = $pdo->prepare("SELECT * FROM sales WHERE " . implode(' AND ', $salesWhere) . " ORDER BY date DESC LIMIT 50");
+$meatSalesStmt = $pdo->prepare("SELECT SUM(amount) FROM sales WHERE type = 'meat_sale' AND " . implode(' AND ', $salesWhere));
+$meatSalesStmt->execute($salesParams);
+$totalMeatSales = $meatSalesStmt->fetchColumn() ?: 0;
+
+$purchasesStmt = $pdo->prepare("SELECT SUM(amount) FROM sales WHERE type IN ('purchase', 'pig_purchase', 'external_purchase') AND " . implode(' AND ', $salesWhere));
+$purchasesStmt->execute($salesParams);
+$totalPurchases = $purchasesStmt->fetchColumn() ?: 0;
+
+$totalRevenue = $totalLiveSales + $totalMeatSales;
+$netMargin = $totalRevenue - $totalPurchases;
+
+$salesListStmt = $pdo->prepare("SELECT * FROM sales WHERE " . implode(' AND ', $salesWhere) . " ORDER BY date DESC LIMIT 100");
 $salesListStmt->execute($salesParams);
 $salesList = $salesListStmt->fetchAll();
 
@@ -542,37 +553,62 @@ include 'includes/header.php';
     <!-- 4. Sales & Financial Summary -->
     <?php if ($incSales && ($category === 'all' || $category === 'sales')): ?>
     <div class="card" style="margin-bottom: 20px;">
-        <h3 style="color: var(--primary-color);">💰 Sales &amp; Revenue Ledger</h3>
+        <h3 style="color: var(--primary-color);">💰 Sales &amp; Financial Revenue Ledger</h3>
         <div class="report-revenue-banner" style="padding: 15px 20px; background: #E8F5E9; border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
-                <h4 style="color: var(--primary-color); margin: 0;">Total Revenue Generated (Filtered Period)</h4>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">Sum of all recorded live pig and meat sales</p>
+                <h4 style="color: var(--primary-color); margin: 0; font-size: 1.15rem;">Total Sales Revenue (Filtered Period)</h4>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;">
+                    🐖 Live Sales: <strong>MWK <?php echo number_format($totalLiveSales, 2); ?></strong> | 
+                    🥩 Meat Sales: <strong>MWK <?php echo number_format($totalMeatSales, 2); ?></strong>
+                    <?php if ($totalPurchases > 0): ?>
+                        | 💰 External Purchases: <strong style="color:#C62828;">MWK <?php echo number_format($totalPurchases, 2); ?></strong>
+                    <?php endif; ?>
+                </p>
             </div>
-            <p style="font-size: 2rem; font-weight: bold; color: var(--primary-color); margin: 0;">MWK <?php echo number_format($totalSales, 2); ?></p>
+            <div style="text-align: right;">
+                <p style="font-size: 1.8rem; font-weight: bold; color: var(--primary-color); margin: 0;">MWK <?php echo number_format($totalRevenue, 2); ?></p>
+                <?php if ($totalPurchases > 0): ?>
+                    <span style="font-size: 0.82rem; color: #1565C0; font-weight: 600;">Net Revenue: MWK <?php echo number_format($netMargin, 2); ?></span>
+                <?php endif; ?>
+            </div>
         </div>
         <div class="table-wrapper">
         <table class="data-table striped middle">
             <thead>
                 <tr>
                     <th style="width:110px;">Date</th>
-                    <th>Type</th>
-                    <th>Ref / Pig</th>
-                    <th>Buyer Details</th>
+                    <th>Transaction Type</th>
+                    <th>Ref / Pig Tag</th>
+                    <th>Weight</th>
+                    <th>Party Details (Buyer/Supplier)</th>
                     <th>Amount (MWK)</th>
+                    <th>Remarks</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach($salesList as $sl): ?>
+                    <?php
+                        $t = $sl['type'] ?? 'live_pig';
+                        $tBadge = match($t) {
+                            'live_pig' => '<span class="tbl-badge blue">🐖 Live Pig Sale</span>',
+                            'meat_sale' => '<span class="tbl-badge green">🥩 Meat / Pork Sale</span>',
+                            'purchase', 'pig_purchase', 'external_purchase' => '<span class="tbl-badge orange">💰 Pig Acquisition / Cost</span>',
+                            default => '<span class="tbl-badge grey">' . htmlspecialchars(ucfirst(str_replace('_', ' ', $t))) . '</span>'
+                        };
+                        $amtClass = in_array($t, ['purchase', 'pig_purchase', 'external_purchase']) ? 'tbl-badge red' : 'tbl-badge green';
+                    ?>
                     <tr>
                         <td><?php echo htmlspecialchars($sl['date']); ?></td>
-                        <td style="text-transform: capitalize;"><?php echo htmlspecialchars(str_replace('_', ' ', $sl['type'])); ?></td>
-                        <td><?php echo htmlspecialchars($sl['reference_id'] ?: '—'); ?></td>
+                        <td><?php echo $tBadge; ?></td>
+                        <td><strong><?php echo htmlspecialchars($sl['reference_id'] ?: '—'); ?></strong></td>
+                        <td><?php echo !empty($sl['weight']) ? htmlspecialchars($sl['weight']) . ' kg' : '—'; ?></td>
                         <td><?php echo htmlspecialchars($sl['buyer_info'] ?: 'Cash Customer'); ?></td>
-                        <td><span class="tbl-badge green">MWK <?php echo number_format($sl['amount'], 2); ?></span></td>
+                        <td><span class="<?php echo $amtClass; ?>">MWK <?php echo number_format($sl['amount'], 2); ?></span></td>
+                        <td><?php echo htmlspecialchars($sl['remarks'] ?: '—'); ?></td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($salesList) === 0): ?>
-                    <tr class="tbl-empty"><td colspan="5">No sales records found matching filters.</td></tr>
+                    <tr class="tbl-empty"><td colspan="7">No sales or financial records found matching filters.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>

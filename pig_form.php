@@ -36,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $castrated = ($sex === 'Male' && isset($_POST['castrated']) && $_POST['castrated'] === '1') ? 1 : 0;
         $castration_date = ($castrated === 1 && !empty($_POST['castration_date'])) ? $_POST['castration_date'] : null;
 
+        $purchase_price = ($source === 'External Purchase' && !empty($_POST['purchase_price'])) ? (float)$_POST['purchase_price'] : null;
+        $vendor = ($source === 'External Purchase') ? trim($_POST['vendor'] ?? '') : null;
+
         // VALIDATION 1: Castration date cannot be before Date of Birth
         if ($castrated === 1 && !empty($castration_date)) {
             if ($castration_date < $dob) {
@@ -73,18 +76,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             try {
                 $pdo->beginTransaction();
-                $stmt = $pdo->prepare("INSERT INTO pigs (tag_no, sex, breed, dob, sire, dam, stage, source, castrated, castration_date, last_known_stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$tag_no, $sex, $breed, $dob, $sire, $dam, $stage, $source, $castrated, $castration_date, $stage]);
+                $stmt = $pdo->prepare("INSERT INTO pigs (tag_no, sex, breed, dob, sire, dam, stage, source, castrated, castration_date, last_known_stage, purchase_price, vendor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$tag_no, $sex, $breed, $dob, $sire, $dam, $stage, $source, $castrated, $castration_date, $stage, $purchase_price, $vendor]);
+
+                // Record external purchase cost in sales/financial ledger
+                if ($source === 'External Purchase' && $purchase_price !== null && $purchase_price > 0) {
+                    $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('purchase', ?, ?, ?, ?, ?)")
+                        ->execute([$tag_no, $dob, $purchase_price, $vendor ?: 'External Supplier', 'External pig acquisition / bought cost']);
+                }
 
                 $castNote = ($sex === 'Male') ? ($castrated ? " [Castrated Barrow]" : " [Intact Boar]") : "";
-                logActivity($pdo, 'pig_created', "Registered single pig #$tag_no (Sex: $sex$castNote, Breed: $breed, Stage: " . ucfirst($stage) . ", Source: $source)");
+                $priceNote = ($purchase_price !== null && $purchase_price > 0) ? " [Bought: MWK " . number_format($purchase_price, 2) . "]" : "";
+                logActivity($pdo, 'pig_created', "Registered single pig #$tag_no (Sex: $sex$castNote, Breed: $breed, Stage: " . ucfirst($stage) . ", Source: $source$priceNote)");
                 $pdo->commit();
 
                 header("Location: pigs.php");
                 exit();
             } catch (PDOException $e) {
                 if ($pdo->inTransaction()) $pdo->rollBack();
-                $error = "Error saving pig record: Tag number '" . htmlspecialchars($tag_no) . "' already exists or is invalid.";
+                $error = "Error saving pig record: Tag number '" . htmlspecialchars($tag_no) . "' already exists or is invalid: " . $e->getMessage();
             }
         }
 
@@ -113,6 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         $batchCastrated = (isset($_POST['batch_castrated']) && $_POST['batch_castrated'] === '1') ? 1 : 0;
         $batchCastrationDate = ($batchCastrated === 1 && !empty($_POST['batch_castration_date'])) ? $_POST['batch_castration_date'] : null;
+
+        $batch_purchase_price = ($source === 'External Purchase' && !empty($_POST['batch_purchase_price'])) ? (float)$_POST['batch_purchase_price'] : null;
+        $batch_vendor = ($source === 'External Purchase') ? trim($_POST['batch_vendor'] ?? '') : null;
 
         // VALIDATION 1: Total pigs in batch must be at least 1
         if ($totalBatch < 1) {
@@ -182,15 +195,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 $insertedTags = [];
                 $currentIndex = $startIndex;
+                $perHeadCost = ($source === 'External Purchase' && $batch_purchase_price !== null && $totalBatch > 0) ? round($batch_purchase_price / $totalBatch, 2) : null;
 
-                $insertStmt = $pdo->prepare("INSERT INTO pigs (tag_no, sex, breed, dob, sire, dam, stage, source, castrated, castration_date, last_known_stage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $insertStmt = $pdo->prepare("INSERT INTO pigs (tag_no, sex, breed, dob, sire, dam, stage, source, castrated, castration_date, last_known_stage, purchase_price, vendor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
                 // Insert Male pigs
                 for ($i = 0; $i < $malesCount; $i++) {
                     $tag = $prefix . '-' . $currentIndex;
                     $insertStmt->execute([
                         $tag, 'Male', $breed, $dob, $sire, $dam, $stage, $source,
-                        $batchCastrated, $batchCastrationDate, $stage
+                        $batchCastrated, $batchCastrationDate, $stage, $perHeadCost, $batch_vendor
                     ]);
                     $insertedTags[] = $tag;
                     $currentIndex++;
@@ -201,14 +215,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $tag = $prefix . '-' . $currentIndex;
                     $insertStmt->execute([
                         $tag, 'Female', $breed, $dob, $sire, $dam, $stage, $source,
-                        0, null, $stage
+                        0, null, $stage, $perHeadCost, $batch_vendor
                     ]);
                     $insertedTags[] = $tag;
                     $currentIndex++;
                 }
 
+                // Record batch purchase in sales/financial ledger
+                if ($source === 'External Purchase' && $batch_purchase_price !== null && $batch_purchase_price > 0) {
+                    $tagRange = (count($insertedTags) > 1) ? "{$insertedTags[0]}..{$insertedTags[count($insertedTags)-1]}" : ($insertedTags[0] ?? $prefix);
+                    $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('purchase', ?, ?, ?, ?, ?)")
+                        ->execute([$tagRange, $dob, $batch_purchase_price, $batch_vendor ?: 'External Supplier', "Batch purchase of $totalBatch external pigs"]);
+                }
+
                 $castSummary = ($malesCount > 0 && $batchCastrated) ? " (Males Castrated on $batchCastrationDate)" : "";
-                logActivity($pdo, 'batch_pigs_created', "Registered batch of $totalBatch pigs ($malesCount Males, $femalesCount Females) under prefix '$prefix'$castSummary. Source: $source, Breed: $breed.");
+                $priceSummary = ($batch_purchase_price !== null && $batch_purchase_price > 0) ? " [Total Bought: MWK " . number_format($batch_purchase_price, 2) . "]" : "";
+                logActivity($pdo, 'batch_pigs_created', "Registered batch of $totalBatch pigs ($malesCount Males, $femalesCount Females) under prefix '$prefix'$castSummary$priceSummary. Source: $source, Breed: $breed.");
 
                 $pdo->commit();
                 header("Location: pigs.php");
@@ -273,6 +295,19 @@ include 'includes/header.php';
                         <option value="Born on Farm">Born on Farm</option>
                         <option value="External Purchase">External Purchase / Bought</option>
                     </select>
+                </div>
+
+                <!-- Single External Purchase Group -->
+                <div id="singleExternalGroup" style="display: none; background: #E3F2FD; border: 1px solid #90CAF9; padding: 14px 16px; border-radius: 8px; margin-bottom: 1.2rem;">
+                    <label style="font-weight: 700; color: #1565C0; font-size: 0.95rem;">💰 Acquisition / Purchase Details</label>
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 8px;">
+                        <label for="purchase_price">Bought Amount / Purchase Price (MWK)</label>
+                        <input type="number" step="0.01" id="purchase_price" name="purchase_price" class="form-control" placeholder="e.g. 75000">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="vendor">Bought From / Vendor Info</label>
+                        <input type="text" id="vendor" name="vendor" class="form-control" placeholder="e.g. Liwonde Livestock Market / Farmer Phiri">
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -403,6 +438,19 @@ include 'includes/header.php';
                         <option value="Born on Farm">Born on Farm</option>
                         <option value="External Purchase">External Purchase / Bought</option>
                     </select>
+                </div>
+
+                <!-- Batch External Purchase Group -->
+                <div id="batchExternalGroup" style="display: none; background: #E3F2FD; border: 1px solid #90CAF9; padding: 14px 16px; border-radius: 8px; margin-bottom: 1.2rem;">
+                    <label style="font-weight: 700; color: #1565C0; font-size: 0.95rem;">💰 Batch Acquisition / Purchase Details</label>
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 8px;">
+                        <label for="batch_purchase_price">Total Batch Bought Amount (MWK)</label>
+                        <input type="number" step="0.01" id="batch_purchase_price" name="batch_purchase_price" class="form-control" placeholder="e.g. 350000">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="batch_vendor">Bought From / Vendor Info</label>
+                        <input type="text" id="batch_vendor" name="batch_vendor" class="form-control" placeholder="e.g. Supplier / Market / Farm name">
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -599,6 +647,12 @@ function updateSingleTagHint() {
     const source = document.getElementById('source').value;
     const dam = document.getElementById('dam').value;
     const hint = document.getElementById('tagHint');
+    const extGrp = document.getElementById('singleExternalGroup');
+
+    if (extGrp) {
+        extGrp.style.display = (source === 'External Purchase') ? 'block' : 'none';
+    }
+
     if (source === 'External Purchase') {
         hint.innerText = "💡 Leave blank to auto-generate EXT-XXX. Official tag can be entered.";
     } else if (dam) {
@@ -612,6 +666,12 @@ function updateBatchTagHint() {
     const source = document.getElementById('batch_source').value;
     const dam = document.getElementById('batch_dam').value;
     const hint = document.getElementById('batchTagHint');
+    const extGrp = document.getElementById('batchExternalGroup');
+
+    if (extGrp) {
+        extGrp.style.display = (source === 'External Purchase') ? 'block' : 'none';
+    }
+
     if (source === 'External Purchase') {
         hint.innerText = "💡 External pigs will inherit EXT-1, EXT-2... or custom prefix.";
     } else if (dam) {

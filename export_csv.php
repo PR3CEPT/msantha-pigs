@@ -64,14 +64,14 @@ if ($category === 'inventory' || $category === 'all') {
 
 if ($category === 'external' || $category === 'all') {
     fputcsv($output, ['--- EXTERNAL / PURCHASED PIGS ACQUISITION AUDIT ---']);
-    fputcsv($output, ['ID', 'Tag No', 'Sex', 'Stage', 'Breed', 'Date of Birth', 'Sire', 'Dam', 'Status']);
+    fputcsv($output, ['ID', 'Tag No', 'Sex', 'Stage', 'Breed', 'Date of Birth', 'Sire', 'Dam', 'Bought Amount (MWK)', 'Vendor / Supplier', 'Status']);
     
     $where = ["source = 'External Purchase'"];
     $params = [];
     if ($sexFilter !== 'all') { $where[] = "sex = ?"; $params[] = $sexFilter; }
     if ($stageFilter !== 'all') { $where[] = "stage = ?"; $params[] = $stageFilter; }
     
-    $sql = "SELECT id, tag_no, sex, stage, breed, dob, sire, dam, status FROM pigs WHERE " . implode(' AND ', $where) . " ORDER BY id DESC";
+    $sql = "SELECT id, tag_no, sex, stage, breed, dob, sire, dam, purchase_price, vendor, status FROM pigs WHERE " . implode(' AND ', $where) . " ORDER BY id DESC";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     
@@ -85,6 +85,8 @@ if ($category === 'external' || $category === 'all') {
             $row['dob'],
             $row['sire'] ?: 'N/A',
             $row['dam'] ?: 'N/A',
+            $row['purchase_price'] ? number_format($row['purchase_price'], 2, '.', '') : 'N/A',
+            $row['vendor'] ?: 'N/A',
             ucfirst($row['status'])
         ]);
     }

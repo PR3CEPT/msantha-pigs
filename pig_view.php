@@ -46,14 +46,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
                 ->execute([$pigId, $date, $cause, $remarks]);
             logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to Deceased (Cause: $cause)");
         } else if ($status === 'sold') {
-            $price = $_POST['price'] ?? 0;
-            $buyer = $_POST['buyer'] ?? 'N/A';
-            $remarks = $_POST['remarks'] ?? 'Live pig sale';
+            $price = !empty($_POST['price']) ? (float)$_POST['price'] : 0;
+            $buyer = trim($_POST['buyer'] ?? 'Cash Customer');
+            $remarks = trim($_POST['remarks'] ?? 'Live pig sale');
             $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('live_pig', ?, ?, ?, ?, ?)")
-                ->execute([$pigId, $date, $price, $buyer, $remarks]);
-            logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to Sold (Buyer: $buyer, Amount: MWK " . number_format($price, 2) . ")");
+                ->execute([$pig['tag_no'], $date, $price, $buyer ?: 'Cash Customer', $remarks]);
+            logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to Sold (Live Pig) (Buyer: $buyer, Amount: MWK " . number_format($price, 2) . ")");
+        } else if ($status === 'sold_meat') {
+            $meatWeight = !empty($_POST['meat_weight']) ? (float)$_POST['meat_weight'] : null;
+            $price = !empty($_POST['meat_price']) ? (float)$_POST['meat_price'] : 0;
+            $buyer = trim($_POST['meat_buyer'] ?? 'Cash Customer');
+            $remarks = trim($_POST['meat_remarks'] ?? 'Pork / Meat sale');
+            $pdo->prepare("INSERT INTO sales (type, reference_id, weight, date, amount, buyer_info, remarks) VALUES ('meat_sale', ?, ?, ?, ?, ?, ?)")
+                ->execute([$pig['tag_no'], $meatWeight, $date, $price, $buyer ?: 'Cash Customer', $remarks]);
+            $weightInfo = $meatWeight ? " (Weight: {$meatWeight} kg)" : "";
+            logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to Sold for Meat$weightInfo (Buyer: $buyer, Amount: MWK " . number_format($price, 2) . ")");
         } else {
-            logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to " . ucfirst($status));
+            logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to " . ucfirst(str_replace('_', ' ', $status)));
         }
 
         $pdo->commit();
@@ -222,6 +231,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_pig_details'])) {
         }
     }
 
+    $purchasePrice = ($source === 'External Purchase' && !empty($_POST['purchase_price'])) ? (float)$_POST['purchase_price'] : null;
+    $vendor = ($source === 'External Purchase') ? trim($_POST['vendor'] ?? '') : null;
+
     if (empty($newTag)) {
         $error = "Ear Tag No cannot be empty.";
     } else if (!$error) {
@@ -236,14 +248,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['edit_pig_details'])) {
                 $oldTag = $pig['tag_no'];
 
                 // Update pig details
-                $updateStmt = $pdo->prepare("UPDATE pigs SET tag_no = ?, sex = ?, breed = ?, dob = ?, sire = ?, dam = ?, stage = ?, source = ?, castrated = ?, castration_date = ? WHERE id = ?");
-                $updateStmt->execute([$newTag, $sex, $breed, $dob, $sire, $dam, $stage, $source, $castrated, $castration_date, $pigId]);
+                $updateStmt = $pdo->prepare("UPDATE pigs SET tag_no = ?, sex = ?, breed = ?, dob = ?, sire = ?, dam = ?, stage = ?, source = ?, castrated = ?, castration_date = ?, purchase_price = ?, vendor = ? WHERE id = ?");
+                $updateStmt->execute([$newTag, $sex, $breed, $dob, $sire, $dam, $stage, $source, $castrated, $castration_date, $purchasePrice, $vendor, $pigId]);
 
-                // If tag changed, update references in sire, dam, and breeding_records
+                // If tag changed, update references in sire, dam, breeding_records, and sales
                 if ($oldTag !== $newTag) {
                     $pdo->prepare("UPDATE pigs SET sire = ? WHERE sire = ?")->execute([$newTag, $oldTag]);
                     $pdo->prepare("UPDATE pigs SET dam = ? WHERE dam = ?")->execute([$newTag, $oldTag]);
                     $pdo->prepare("UPDATE breeding_records SET sire_no = ? WHERE sire_no = ?")->execute([$newTag, $oldTag]);
+                    $pdo->prepare("UPDATE sales SET reference_id = ? WHERE reference_id = ?")->execute([$newTag, $oldTag]);
+                }
+
+                // If external purchase with a recorded purchase price, sync sales table entry
+                if ($source === 'External Purchase' && $purchasePrice !== null && $purchasePrice > 0) {
+                    $chkSale = $pdo->prepare("SELECT id FROM sales WHERE type = 'purchase' AND (reference_id = ? OR reference_id = ?)");
+                    $chkSale->execute([$oldTag, $newTag]);
+                    $existingSaleId = $chkSale->fetchColumn();
+                    if ($existingSaleId) {
+                        $pdo->prepare("UPDATE sales SET reference_id = ?, amount = ?, buyer_info = ? WHERE id = ?")
+                            ->execute([$newTag, $purchasePrice, $vendor ?: 'External Supplier', $existingSaleId]);
+                    } else {
+                        $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('purchase', ?, ?, ?, ?, ?)")
+                            ->execute([$newTag, $dob, $purchasePrice, $vendor ?: 'External Supplier', 'External pig acquisition / bought cost']);
+                    }
                 }
 
                 $tagNote = ($oldTag !== $newTag) ? " (renamed from #{$oldTag})" : "";
@@ -334,6 +361,22 @@ include 'includes/header.php';
                                 <span class="badge" style="background: #E3F2FD; color: #1565C0; font-weight: 600; padding: 3px 8px; border-radius: 4px;"><?php echo htmlspecialchars($pig['source'] ?? 'Born on Farm'); ?></span>
                             </td>
                         </tr>
+                        <?php if (($pig['source'] ?? '') === 'External Purchase'): ?>
+                        <tr style="border-bottom: 1px solid #f0f0f0;">
+                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Bought Amount / Cost</td>
+                            <td style="padding: 10px 12px;">
+                                <?php if (!empty($pig['purchase_price'])): ?>
+                                    <strong style="color: #1565C0; font-size: 1rem;">MWK <?php echo number_format($pig['purchase_price'], 2); ?></strong>
+                                    <?php if (!empty($pig['vendor'])): ?>
+                                        <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 6px;">(Supplier: <?php echo htmlspecialchars($pig['vendor']); ?>)</span>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span style="color: var(--text-muted); font-style: italic;">Not recorded</span>
+                                    <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem; margin-left: 6px;" onclick="openModal('editPigModal')">+ Record Cost</button>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                         <tr style="border-bottom: 1px solid #f0f0f0;">
                             <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Sex / Gender</td>
                             <td style="padding: 10px 12px; font-weight: 600;"><?php echo htmlspecialchars($pig['sex']); ?></td>
@@ -384,8 +427,31 @@ include 'includes/header.php';
                         <tr style="border-bottom: 1px solid #f0f0f0;">
                             <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Current Status</td>
                             <td style="padding: 10px 12px;">
-                                <span class="badge" style="background: #E8F5E9; color: var(--primary-color); font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
-                                    <?php echo htmlspecialchars($pig['status']); ?>
+                                <?php
+                                    $statusLabel = match($pig['status']) {
+                                        'sold'      => '🐖 Sold (Live Pig)',
+                                        'sold_meat' => '🥩 Sold for Meat / Pork',
+                                        'dead'      => '💀 Deceased',
+                                        'archived'  => '📦 Archived',
+                                        default     => 'Active'
+                                    };
+                                    $badgeBg = match($pig['status']) {
+                                        'sold'      => '#E3F2FD',
+                                        'sold_meat' => '#FFF3E0',
+                                        'dead'      => '#FFEBEE',
+                                        'archived'  => '#F5F5F5',
+                                        default     => '#E8F5E9'
+                                    };
+                                    $badgeClr = match($pig['status']) {
+                                        'sold'      => '#1565C0',
+                                        'sold_meat' => '#E65100',
+                                        'dead'      => '#C62828',
+                                        'archived'  => '#616161',
+                                        default     => 'var(--primary-color)'
+                                    };
+                                ?>
+                                <span class="badge" style="background: <?php echo $badgeBg; ?>; color: <?php echo $badgeClr; ?>; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
+                                    <?php echo $statusLabel; ?>
                                 </span>
                             </td>
                         </tr>
@@ -395,43 +461,74 @@ include 'includes/header.php';
             
             <?php if ($pig['status'] === 'active'): ?>
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
-            <h3>Update Status (Record keeping)</h3>
+            <h3>Update Status &amp; Record Revenue</h3>
             <form action="pig_view.php?id=<?php echo $pigId; ?>" method="POST" style="margin-top: 10px;">
                 <input type="hidden" name="update_status" value="1">
                 <div class="form-group">
                     <label for="statusSelect">New Status</label>
                     <select name="status" class="form-control" id="statusSelect" required>
                         <option value="">-- Select New Status --</option>
-                        <option value="sold">Sold</option>
-                        <option value="dead">Dead</option>
-                        <option value="archived">Archived</option>
+                        <option value="sold">🐖 Sold (Live Pig)</option>
+                        <option value="sold_meat">🥩 Sold for Meat / Pork</option>
+                        <option value="dead">💀 Deceased / Dead</option>
+                        <option value="archived">📦 Archived</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Transaction Date</label>
                     <input type="date" name="date" class="form-control" value="<?php echo date('Y-m-d'); ?>" required>
                 </div>
-                <div id="soldFields" style="display: none;">
-                    <div class="form-group">
-                        <label>Sale Price / Amount (MWK)</label>
-                        <input type="number" step="0.01" name="price" class="form-control" placeholder="e.g. 150000">
+                <!-- Live Pig Sale Fields -->
+                <div id="soldFields" style="display: none; background: #E8F5E9; border: 1px solid #C8E6C9; padding: 12px 14px; border-radius: 8px; margin-bottom: 1rem;">
+                    <label style="font-weight: 700; color: #2E7D32;">🐖 Live Pig Sale Details</label>
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <label>Live Pig Sale Price / Total Revenue (MWK)</label>
+                        <input type="number" step="0.01" name="price" id="live_sale_price" class="form-control" placeholder="e.g. 150000" style="font-weight: 700;">
                     </div>
-                    <div class="form-group">
-                        <label>Buyer Information</label>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Buyer Information / Contact</label>
                         <input type="text" name="buyer" class="form-control" placeholder="e.g. John Banda (+265...)">
                     </div>
                 </div>
-                <div id="deadFields" style="display: none;">
-                    <div class="form-group">
+                <!-- Meat / Slaughter Sale Fields -->
+                <div id="meatFields" style="display: none; background: #FFF8E1; border: 1px solid #FFE082; padding: 12px 14px; border-radius: 8px; margin-bottom: 1rem;">
+                    <label style="font-weight: 700; color: #F57F17;">🥩 Meat / Pork Sale Details</label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 8px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Meat/Carcass Weight (kg)</label>
+                            <input type="number" step="0.1" name="meat_weight" id="meat_weight" class="form-control" placeholder="e.g. 68.5" oninput="calcMeatTotal()">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Price per kg (MWK) <small>(Optional)</small></label>
+                            <input type="number" step="0.01" id="meat_price_per_kg" class="form-control" placeholder="e.g. 3500" oninput="calcMeatTotal()">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                        <label style="font-weight: 700;">Total Meat Sale Revenue (MWK)</label>
+                        <input type="number" step="0.01" name="meat_price" id="meat_price" class="form-control" placeholder="e.g. 239750" style="font-weight: 700;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label>Buyer / Customer / Butchery Info</label>
+                        <input type="text" name="meat_buyer" class="form-control" placeholder="e.g. Liwonde Butchery / Customer name">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Meat Sale Notes</label>
+                        <input type="text" name="meat_remarks" class="form-control" placeholder="e.g. Dressed carcass weight sold to local market">
+                    </div>
+                </div>
+                <!-- Dead Fields -->
+                <div id="deadFields" style="display: none; background: #FFEBEE; border: 1px solid #FFCDD2; padding: 12px 14px; border-radius: 8px; margin-bottom: 1rem;">
+                    <label style="font-weight: 700; color: #C62828;">💀 Mortality Record</label>
+                    <div class="form-group" style="margin-top: 8px; margin-bottom: 0;">
                         <label>Cause of Death</label>
-                        <input type="text" name="cause" class="form-control" placeholder="e.g. Swine Fever / Disease">
+                        <input type="text" name="cause" class="form-control" placeholder="e.g. Swine Fever / Disease / Injury">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Remarks</label>
+                    <label>Remarks / Notes</label>
                     <input type="text" name="remarks" class="form-control" placeholder="Additional notes...">
                 </div>
-                <button type="submit" class="btn btn-primary">Update Status</button>
+                <button type="submit" class="btn btn-primary">Update Status &amp; Save</button>
             </form>
             <?php endif; ?>
         </div>
@@ -845,11 +942,25 @@ include 'includes/header.php';
             </div>
             <div class="form-group">
                 <label>Source / Origin</label>
-                <select name="source" class="form-control">
+                <select name="source" id="editSourceSelect" class="form-control" onchange="toggleEditSourceFields()">
                     <option value="Born on Farm" <?php echo ($pig['source'] ?? '') === 'Born on Farm' ? 'selected' : ''; ?>>Born on Farm</option>
                     <option value="External Purchase" <?php echo ($pig['source'] ?? '') === 'External Purchase' ? 'selected' : ''; ?>>External Purchase / Bought</option>
                 </select>
             </div>
+
+            <!-- External Purchase fields in Edit Modal -->
+            <div id="editExternalGroup" style="background: #E3F2FD; border: 1px solid #90CAF9; padding: 12px 15px; border-radius: 8px; margin-bottom: 1rem; display: <?php echo ($pig['source'] ?? '') === 'External Purchase' ? 'block' : 'none'; ?>;">
+                <label style="font-weight: 700; color: #1565C0;">💰 External Purchase / Bought Cost</label>
+                <div class="form-group" style="margin-top: 8px; margin-bottom: 8px;">
+                    <label>Bought Amount / Purchase Price (MWK)</label>
+                    <input type="number" step="0.01" name="purchase_price" class="form-control" placeholder="e.g. 75000" value="<?php echo htmlspecialchars($pig['purchase_price'] ?? ''); ?>">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Vendor / Supplier Info</label>
+                    <input type="text" name="vendor" class="form-control" placeholder="e.g. Liwonde Livestock Market / Farmer Phiri" value="<?php echo htmlspecialchars($pig['vendor'] ?? ''); ?>">
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>Life Stage</label>
                 <select name="stage" class="form-control">
@@ -918,8 +1029,25 @@ include 'includes/header.php';
     if (statusSelect) {
         statusSelect.addEventListener('change', function() {
             document.getElementById('soldFields').style.display = this.value === 'sold' ? 'block' : 'none';
+            document.getElementById('meatFields').style.display = this.value === 'sold_meat' ? 'block' : 'none';
             document.getElementById('deadFields').style.display = this.value === 'dead' ? 'block' : 'none';
         });
+    }
+
+    function calcMeatTotal() {
+        const wt = parseFloat(document.getElementById('meat_weight').value) || 0;
+        const ppk = parseFloat(document.getElementById('meat_price_per_kg').value) || 0;
+        if (wt > 0 && ppk > 0) {
+            document.getElementById('meat_price').value = (wt * ppk).toFixed(2);
+        }
+    }
+
+    function toggleEditSourceFields() {
+        const sel = document.getElementById('editSourceSelect');
+        const grp = document.getElementById('editExternalGroup');
+        if (sel && grp) {
+            grp.style.display = sel.value === 'External Purchase' ? 'block' : 'none';
+        }
     }
 
     function openModal(modalId) {

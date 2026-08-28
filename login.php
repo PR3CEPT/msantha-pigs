@@ -8,6 +8,10 @@ if (isset($_SESSION['user_id'])) {
 
 $error = null;
 
+if (isset($_GET['error']) && $_GET['error'] === 'concurrent_session') {
+    $error = "Your session was terminated because your account was logged in from another device or browser window.";
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -17,12 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
+        // Generate unique session token to enforce single active session per user
+        $sessionToken = bin2hex(random_bytes(32));
+        $updateToken = $pdo->prepare("UPDATE users SET session_token = ? WHERE id = ?");
+        $updateToken->execute([$sessionToken, $user['id']]);
+
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['username'] = $user['username'];
         $_SESSION['user_fullname'] = $user['full_name'];
         $_SESSION['user_role'] = $user['role'];
+        $_SESSION['session_token'] = $sessionToken;
         
-        logActivity($pdo, 'login', "User '{$user['username']}' logged into system successfully", $user['id'], $user['username'], $user['role']);
+        logActivity($pdo, 'login', "User '{$user['username']}' logged into system successfully (Single Session Established)", $user['id'], $user['username'], $user['role']);
         header("Location: dashboard.php");
         exit();
     } else {

@@ -61,7 +61,8 @@ include 'includes/header.php';
                 <label style="font-size: 0.85rem; margin-bottom: 2px;">Filter Status:</label>
                 <select name="status" class="form-control" onchange="this.form.submit()" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
                     <option value="active" <?php echo $statusFilter === 'active' ? 'selected' : ''; ?>>Active Inventory</option>
-                    <option value="sold" <?php echo $statusFilter === 'sold' ? 'selected' : ''; ?>>Sold</option>
+                    <option value="sold" <?php echo $statusFilter === 'sold' ? 'selected' : ''; ?>>Sold (Live Pig)</option>
+                    <option value="sold_meat" <?php echo $statusFilter === 'sold_meat' ? 'selected' : ''; ?>>🥩 Sold for Meat</option>
                     <option value="dead" <?php echo $statusFilter === 'dead' ? 'selected' : ''; ?>>Deceased / Mortality</option>
                     <option value="archived" <?php echo $statusFilter === 'archived' ? 'selected' : ''; ?>>Archived</option>
                     <option value="all" <?php echo $statusFilter === 'all' ? 'selected' : ''; ?>>All Statuses</option>
@@ -145,11 +146,21 @@ include 'includes/header.php';
                         <td>
                             <?php 
                                 $sBadge = 'green';
-                                if ($pig['status'] === 'sold') $sBadge = 'orange';
-                                else if ($pig['status'] === 'dead') $sBadge = 'red';
-                                else if ($pig['status'] === 'archived') $sBadge = 'grey';
+                                $sText = ucfirst(htmlspecialchars($pig['status']));
+                                if ($pig['status'] === 'sold') {
+                                    $sBadge = 'blue';
+                                    $sText = 'Sold (Live)';
+                                } else if ($pig['status'] === 'sold_meat') {
+                                    $sBadge = 'orange';
+                                    $sText = '🥩 Sold (Meat)';
+                                } else if ($pig['status'] === 'dead') {
+                                    $sBadge = 'red';
+                                    $sText = 'Deceased';
+                                } else if ($pig['status'] === 'archived') {
+                                    $sBadge = 'grey';
+                                }
                             ?>
-                            <span class="tbl-badge <?php echo $sBadge; ?>"><?php echo ucfirst(htmlspecialchars($pig['status'])); ?></span>
+                            <span class="tbl-badge <?php echo $sBadge; ?>"><?php echo $sText; ?></span>
                         </td>
                         <td>
                             <a href="pig_view.php?id=<?php echo $pig['id']; ?>" class="btn btn-outline" style="padding: 0.35rem 0.8rem; font-size: 0.8rem;">Manage &rarr;</a>
