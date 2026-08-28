@@ -549,17 +549,20 @@ include 'includes/header.php';
 
             <?php if (!empty($pig_sales)): ?>
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
-            <h3 style="margin-bottom: 10px;">💳 Transaction / Sales History</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">💳 Transaction &amp; Sales History</h3>
+                <span style="font-size: 0.8rem; color: var(--text-muted);"><?php echo count($pig_sales); ?> record(s)</span>
+            </div>
             <div class="table-wrapper" style="border: none; box-shadow: none;">
             <table class="data-table striped" style="font-size: 0.88rem;">
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Transaction Type</th>
+                        <th>Type</th>
                         <th>Weight</th>
                         <th>Amount (MWK)</th>
-                        <th>Party</th>
-                        <th>Notes</th>
+                        <th>Buyer / Vendor</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -570,7 +573,7 @@ include 'includes/header.php';
                             'live_pig'                      => '🐖 Live Pig Sale',
                             'meat_sale'                     => '🥩 Meat / Pork Sale',
                             'purchase','pig_purchase',
-                            'external_purchase'             => '💰 External Purchase Cost',
+                            'external_purchase'             => '💰 External Purchase',
                             default                         => ucfirst(str_replace('_',' ',$pt))
                         };
                         $ptColor = in_array($pt, ['purchase','pig_purchase','external_purchase']) ? '#C62828' : 'var(--primary-color)';
@@ -581,7 +584,9 @@ include 'includes/header.php';
                         <td><?php echo !empty($ps['weight']) ? htmlspecialchars($ps['weight']).' kg' : '—'; ?></td>
                         <td><strong style="color:<?php echo $ptColor; ?>">MWK <?php echo number_format((float)$ps['amount'], 2); ?></strong></td>
                         <td><?php echo htmlspecialchars($ps['buyer_info'] ?: '—'); ?></td>
-                        <td><?php echo htmlspecialchars($ps['remarks'] ?: '—'); ?></td>
+                        <td>
+                            <a href="transaction_view.php?id=<?php echo $ps['id']; ?>" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.72rem; white-space: nowrap;">Full Details &rarr;</a>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
@@ -664,7 +669,7 @@ include 'includes/header.php';
         </div>
 
         <!-- Right Side Tabs / History Cards -->
-        <div>
+        <div class="pig-view-right-col" style="min-width: 0; width: 100%; box-sizing: border-box;">
             <!-- Growth Records Card -->
             <div class="card" style="margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">

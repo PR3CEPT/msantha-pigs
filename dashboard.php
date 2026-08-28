@@ -199,9 +199,10 @@ include 'includes/header.php';
             <table class="data-table striped middle">
                 <thead>
                     <tr>
-                        <th style="width:110px;">Date</th>
+                        <th style="width:100px;">Date</th>
                         <th>Buyer</th>
                         <th>Amount (MWK)</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -210,10 +211,13 @@ include 'includes/header.php';
                             <td><?php echo htmlspecialchars($rs['date']); ?></td>
                             <td><?php echo htmlspecialchars($rs['buyer_info'] ?: 'Cash Buyer'); ?></td>
                             <td><span class="tbl-badge green" style="font-size:0.85rem;">MWK <?php echo number_format($rs['amount'], 2); ?></span></td>
+                            <td>
+                                <a href="transaction_view.php?id=<?php echo $rs['id']; ?>" class="btn btn-outline" style="padding: 2px 7px; font-size: 0.72rem; white-space: nowrap;">View &rarr;</a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (count($recentSales) === 0): ?>
-                        <tr class="tbl-empty"><td colspan="3">No sales recorded yet.</td></tr>
+                        <tr class="tbl-empty"><td colspan="4">No sales recorded yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -224,10 +228,11 @@ include 'includes/header.php';
             <h3>Quick Actions</h3>
             <div class="action-buttons">
                 <a href="pig_form.php" class="btn btn-primary">+ Register New Pig</a>
-                <a href="logs.php" class="btn btn-outline">📋 View Activity Logs</a>
+                <a href="pigs.php" class="btn btn-outline">🐷 Pig Inventory</a>
                 <a href="reports.php" class="btn btn-outline">📈 View Farm Reports</a>
                 <a href="profile.php" class="btn btn-outline">👤 My User Profile</a>
                 <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                    <a href="logs.php" class="btn btn-outline">📋 View Activity Logs</a>
                     <a href="users.php" class="btn btn-success">⚙️ Manage User Accounts</a>
                 <?php endif; ?>
             </div>

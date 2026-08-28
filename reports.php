@@ -577,13 +577,14 @@ include 'includes/header.php';
         <table class="data-table striped middle">
             <thead>
                 <tr>
-                    <th style="width:110px;">Date</th>
+                    <th style="width:100px;">Date</th>
                     <th>Transaction Type</th>
                     <th>Ref / Pig Tag</th>
                     <th>Weight</th>
-                    <th>Party Details (Buyer/Supplier)</th>
+                    <th>Party Details</th>
                     <th>Amount (MWK)</th>
                     <th>Remarks</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -606,10 +607,13 @@ include 'includes/header.php';
                         <td><?php echo htmlspecialchars($sl['buyer_info'] ?: 'Cash Customer'); ?></td>
                         <td><span class="<?php echo $amtClass; ?>">MWK <?php echo number_format($sl['amount'], 2); ?></span></td>
                         <td><?php echo htmlspecialchars($sl['remarks'] ?: '—'); ?></td>
+                        <td>
+                            <a href="transaction_view.php?id=<?php echo $sl['id']; ?>" class="btn btn-outline" style="padding: 3px 8px; font-size: 0.72rem; white-space: nowrap;">View &rarr;</a>
+                        </td>
                     </tr>
                 <?php endforeach; ?>
                 <?php if (count($salesList) === 0): ?>
-                    <tr class="tbl-empty"><td colspan="7">No sales or financial records found matching filters.</td></tr>
+                    <tr class="tbl-empty"><td colspan="8">No sales or financial records found matching filters.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
