@@ -172,17 +172,30 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     } catch (PDOException $e) {}
 
-    // Auto-seed admin and clerk users if they don't exist
+    // Auto-seed and sync admin and clerk users
     try {
-        $stmt = $pdo->query("SELECT COUNT(*) FROM users");
-        $count = $stmt->fetchColumn();
+        $adminHash = password_hash('isaac2000', PASSWORD_DEFAULT);
+        $clerkHash = password_hash('clerk123', PASSWORD_DEFAULT);
 
-        if ($count == 0) {
-            $adminHash = password_hash('admin123', PASSWORD_DEFAULT);
-            $clerkHash = password_hash('clerk123', PASSWORD_DEFAULT);
-            
+        $stmt = $pdo->prepare("SELECT id, password FROM users WHERE username = 'admin'");
+        $stmt->execute();
+        $adminUser = $stmt->fetch();
+
+        if ($adminUser) {
+            // Update admin password to isaac2000 if not already matching
+            if (!password_verify('isaac2000', $adminUser['password'])) {
+                $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$adminHash, $adminUser['id']]);
+            }
+        } else {
             $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, phone) VALUES (?, ?, ?, ?, ?)");
             $insertStmt->execute(['admin', $adminHash, 'admin', 'System Admin', '0000000000']);
+        }
+
+        // Ensure clerk exists
+        $stmtClerk = $pdo->prepare("SELECT id FROM users WHERE username = 'clerk'");
+        $stmtClerk->execute();
+        if (!$stmtClerk->fetch()) {
+            $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, phone) VALUES (?, ?, ?, ?, ?)");
             $insertStmt->execute(['clerk', $clerkHash, 'clerk', 'Farm Clerk', '0000000000']);
         }
     } catch (PDOException $e) {}
