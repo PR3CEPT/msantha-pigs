@@ -32,7 +32,8 @@ if (isset($_SESSION['user_id'])) {
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').then((reg) => {
+                navigator.serviceWorker.register('sw.js?v=<?php echo file_exists(__DIR__ . "/../sw.js") ? filemtime(__DIR__ . "/../sw.js") : time(); ?>').then((reg) => {
+                    reg.update();
                     console.log('PWA Service Worker registered:', reg.scope);
                 }).catch((err) => {
                     console.log('PWA Service Worker registration failed:', err);

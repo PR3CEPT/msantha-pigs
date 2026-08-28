@@ -4,3 +4,18 @@ DirectoryIndex index.php dashboard.php login.php
     RewriteEngine On
     RewriteBase /
 </IfModule>
+
+<IfModule mod_headers.c>
+    # Prevent caching of dynamic PHP pages and service worker
+    <FilesMatch "\.(php|html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+    <Files "sw.js">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </Files>
+</IfModule>
+

@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     mariadb-server \
     mariadb-client \
     && docker-php-ext-install pdo pdo_mysql \
-    && a2enmod rewrite \
+    && a2enmod rewrite headers \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configure Apache for clean URL redirects & AllowOverride
