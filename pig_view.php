@@ -352,162 +352,199 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['archive_pig'])) {
     }
 }
 
+// Latest weight helper
+$latestWeight = !empty($growth_records) ? $growth_records[0]['weight'] : null;
+
+// Status styling helper
+$statusLabel = match($pig['status']) {
+    'sold'      => '🐖 Sold (Live Pig)',
+    'sold_meat' => '🥩 Sold for Meat',
+    'dead'      => '💀 Deceased',
+    'archived'  => '📦 Archived',
+    default     => '🟢 Active Inventory'
+};
+$badgeStatusClass = match($pig['status']) {
+    'sold'      => 'badge-sold',
+    'sold_meat' => 'badge-meat',
+    'dead'      => 'badge-dead',
+    'archived'  => 'badge-archived',
+    default     => 'badge-active'
+};
+
 include 'includes/header.php';
 ?>
 
 <div class="dashboard-wrapper">
 
-    <div class="dashboard-header pig-view-header">
-        <div>
-            <h2>Pig Details: <?php echo htmlspecialchars($pig['tag_no']); ?></h2>
-            <p>Stage: <span style="text-transform: capitalize; font-weight: 600;"><?php echo htmlspecialchars($pig['stage']); ?></span> | Status: <span style="font-weight: 600; color: var(--primary-color);"><?php echo htmlspecialchars($pig['status']); ?></span></p>
+    <!-- ==================== PIG HERO PROFILE CARD ==================== -->
+    <div class="pig-hero-card">
+        <div class="pig-hero-top">
+            <div class="pig-avatar-wrap">
+                <div class="pig-avatar">
+                    <?php echo (strtolower($pig['sex']) === 'female') ? '🐖' : ($pig['castrated'] ? '✂️' : '🐗'); ?>
+                </div>
+            </div>
+            <div class="pig-hero-info">
+                <div class="pig-hero-badge-row">
+                    <span class="pig-badge <?php echo $badgeStatusClass; ?>"><?php echo $statusLabel; ?></span>
+                    <span class="pig-badge stage-badge"><?php echo STAGE_LABELS[$pig['stage']] ?? ucfirst(htmlspecialchars($pig['stage'])); ?></span>
+                    <span class="pig-badge sex-badge"><?php echo htmlspecialchars($pig['sex']); ?></span>
+                </div>
+                <h2 class="pig-hero-title">Ear Tag #<?php echo htmlspecialchars($pig['tag_no']); ?></h2>
+                <p class="pig-hero-meta">
+                    <strong><?php echo htmlspecialchars($pig['breed'] ?: 'Unknown Breed'); ?></strong> · 
+                    <span><?php echo htmlspecialchars($pig['source'] ?? 'Born on Farm'); ?></span> · 
+                    <span><?php echo htmlspecialchars($pig['age_months']); ?> months old</span>
+                </p>
+            </div>
         </div>
-        <div class="pig-view-actions">
-            <button class="btn btn-warning" onclick="openModal('editPigModal')">✏️ Edit Details</button>
-            <button class="btn btn-primary" onclick="openModal('growthModal')">+ Log Weight</button>
-            <button class="btn btn-outline" onclick="openModal('vacModal')">+ Log Health</button>
+
+        <!-- Quick Summary Stat Tiles -->
+        <div class="pig-hero-kpi-grid">
+            <div class="pig-kpi-pill">
+                <span class="pig-kpi-icon">🎂</span>
+                <div>
+                    <span class="pig-kpi-label">Age</span>
+                    <strong class="pig-kpi-val"><?php echo htmlspecialchars($pig['age_months']); ?>m <small>(<?php echo htmlspecialchars($pig['age_days_calc']); ?>d)</small></strong>
+                </div>
+            </div>
+            <div class="pig-kpi-pill">
+                <span class="pig-kpi-icon">⚖️</span>
+                <div>
+                    <span class="pig-kpi-label">Latest Weight</span>
+                    <strong class="pig-kpi-val"><?php echo $latestWeight ? htmlspecialchars($latestWeight) . ' kg' : '—'; ?></strong>
+                </div>
+            </div>
+            <div class="pig-kpi-pill">
+                <span class="pig-kpi-icon">📅</span>
+                <div>
+                    <span class="pig-kpi-label">Date of Birth</span>
+                    <strong class="pig-kpi-val"><?php echo htmlspecialchars($pig['dob']); ?></strong>
+                </div>
+            </div>
+            <div class="pig-kpi-pill">
+                <span class="pig-kpi-icon">🧬</span>
+                <div>
+                    <span class="pig-kpi-label">Sire / Dam</span>
+                    <strong class="pig-kpi-val"><?php echo htmlspecialchars($pig['sire'] ?: '—'); ?> / <?php echo htmlspecialchars($pig['dam'] ?: '—'); ?></strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Touch-Friendly Action Bar -->
+        <div class="pig-actions-bar">
+            <button class="btn btn-warning pig-action-btn" onclick="openModal('editPigModal')">✏️ Edit Details</button>
+            <button class="btn btn-primary pig-action-btn" onclick="openModal('growthModal')">⚖️ Log Weight</button>
+            <button class="btn btn-outline pig-action-btn" onclick="openModal('vacModal')">💉 Log Health</button>
             <?php if (strtolower($pig['sex']) === 'female'): ?>
-                <button class="btn btn-success" onclick="openModal('breedingModal')">+ Log Breeding</button>
+                <button class="btn btn-success pig-action-btn" onclick="openModal('breedingModal')">🍼 Log Breeding</button>
             <?php endif; ?>
             <?php if ($pig['status'] !== 'archived'): ?>
-                <button class="btn btn-outline" onclick="openModal('archivePigModal')" style="border-color:#546E7A; color:#37474F;">📦 Archive Pig</button>
+                <button class="btn btn-outline pig-action-btn pig-archive-btn" onclick="openModal('archivePigModal')">📦 Archive</button>
             <?php else: ?>
                 <form action="pig_view.php?id=<?php echo $pigId; ?>" method="POST" style="display:inline;" onsubmit="return confirm('Reactivate this pig to Active inventory?');">
                     <input type="hidden" name="update_status" value="1">
                     <input type="hidden" name="status" value="active">
                     <input type="hidden" name="date" value="<?php echo date('Y-m-d'); ?>">
-                    <button type="submit" class="btn btn-success">🔄 Reactivate Pig</button>
+                    <button type="submit" class="btn btn-success pig-action-btn">🔄 Reactivate</button>
                 </form>
             <?php endif; ?>
-            <a href="pigs.php" class="btn btn-outline">&larr; Back to List</a>
+            <a href="pigs.php" class="btn btn-outline pig-action-btn">&larr; Back to List</a>
         </div>
     </div>
 
     <?php if ($msg): ?>
-        <div class="alert alert-success"><?php echo htmlspecialchars($msg); ?></div>
+        <div class="alert alert-success" style="margin-top: 15px;"><?php echo htmlspecialchars($msg); ?></div>
     <?php endif; ?>
     <?php if ($error): ?>
-        <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+        <div class="alert alert-danger" style="margin-top: 15px;"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
 
-    <div class="dashboard-content">
-        <!-- Pig Card -->
-        <div class="card" style="margin-bottom: 20px;">
-            <div style="margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
-                <h3 style="margin: 0; color: var(--primary-color);">📋 Pig Card Details</h3>
+    <div class="dashboard-content" style="margin-top: 20px;">
+        <!-- Left Side: Pig Profile Card -->
+        <div class="card pig-spec-card" style="margin-bottom: 20px;">
+            <div class="pig-spec-card-header">
+                <h3 style="margin: 0; color: var(--primary-color);">📋 Full Pig Profile</h3>
+                <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.78rem;" onclick="openModal('editPigModal')">✏️ Edit</button>
             </div>
 
-            <div class="table-wrapper" style="border: none; box-shadow: none;">
-                <table class="data-table pig-card-table" style="width: 100%; font-size: 0.92rem; border-collapse: collapse;">
-                    <tbody>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; width: 35%; background: #fafafa;">Ear Tag Number</td>
-                            <td style="padding: 10px 12px;">
-                                <span style="font-size: 1.15rem; font-weight: 800; color: var(--primary-color);"><?php echo htmlspecialchars($pig['tag_no']); ?></span>
-                            </td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Source / Origin</td>
-                            <td style="padding: 10px 12px;">
-                                <span class="badge" style="background: #E3F2FD; color: #1565C0; font-weight: 600; padding: 3px 8px; border-radius: 4px;"><?php echo htmlspecialchars($pig['source'] ?? 'Born on Farm'); ?></span>
-                            </td>
-                        </tr>
-                        <?php if (($pig['source'] ?? '') === 'External Purchase'): ?>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Bought Amount / Cost</td>
-                            <td style="padding: 10px 12px;">
-                                <?php if (!empty($pig['purchase_price'])): ?>
-                                    <strong style="color: #1565C0; font-size: 1rem;">MWK <?php echo number_format($pig['purchase_price'], 2); ?></strong>
-                                    <?php if (!empty($pig['vendor'])): ?>
-                                        <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 6px;">(Supplier: <?php echo htmlspecialchars($pig['vendor']); ?>)</span>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <span style="color: var(--text-muted); font-style: italic;">Not recorded</span>
-                                    <button class="btn btn-outline" style="padding: 2px 8px; font-size: 0.72rem; margin-left: 6px;" onclick="openModal('editPigModal')">+ Record Cost</button>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endif; ?>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Sex / Gender</td>
-                            <td style="padding: 10px 12px; font-weight: 600;"><?php echo htmlspecialchars($pig['sex']); ?></td>
-                        </tr>
+            <div class="pig-spec-grid">
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Ear Tag Number</span>
+                    <span class="pig-spec-value" style="font-size: 1.15rem; font-weight: 800; color: var(--primary-color);">#<?php echo htmlspecialchars($pig['tag_no']); ?></span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Sex &amp; Reproduction</span>
+                    <span class="pig-spec-value">
                         <?php if ($pig['sex'] === 'Male'): ?>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Male Castration Status</td>
-                            <td style="padding: 10px 12px;">
-                                <?php if (!empty($pig['castrated'])): ?>
-                                    <span class="badge" style="background: #E8F5E9; color: #1B5E20; font-weight: 600; padding: 3px 8px; border-radius: 4px;">✂️ Castrated Male (Barrow)</span>
-                                    <?php if (!empty($pig['castration_date'])): ?>
-                                        <span style="font-size: 0.85rem; color: var(--text-muted); margin-left: 6px;">(Castrated on <?php echo htmlspecialchars($pig['castration_date']); ?>)</span>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <span class="badge" style="background: #FFF3E0; color: #E65100; font-weight: 600; padding: 3px 8px; border-radius: 4px;">🐗 Intact Male (Boar)</span>
+                            <?php if (!empty($pig['castrated'])): ?>
+                                <span class="badge" style="background: #E8F5E9; color: #1B5E20; font-weight: 700; padding: 4px 8px; border-radius: 4px;">✂️ Castrated Male (Barrow)</span>
+                                <?php if (!empty($pig['castration_date'])): ?>
+                                    <small style="display:block; color: var(--text-muted); margin-top: 2px;">Castrated on <?php echo htmlspecialchars($pig['castration_date']); ?></small>
                                 <?php endif; ?>
-                            </td>
-                        </tr>
+                            <?php else: ?>
+                                <span class="badge" style="background: #FFF3E0; color: #E65100; font-weight: 700; padding: 4px 8px; border-radius: 4px;">🐗 Intact Male (Boar)</span>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <span class="badge" style="background: #FCE4EC; color: #C2185B; font-weight: 700; padding: 4px 8px; border-radius: 4px;">♀️ Female Sow / Gilt</span>
                         <?php endif; ?>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Breed</td>
-                            <td style="padding: 10px 12px;"><?php echo htmlspecialchars($pig['breed'] ?: 'N/A'); ?></td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Date of Birth</td>
-                            <td style="padding: 10px 12px;"><?php echo htmlspecialchars($pig['dob']); ?></td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Current Age</td>
-                            <td style="padding: 10px 12px;">
-                                <strong><?php echo htmlspecialchars($pig['age_months']); ?> months</strong> (<?php echo htmlspecialchars($pig['age_days_calc']); ?> days)
-                            </td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Life Stage</td>
-                            <td style="padding: 10px 12px; text-transform: capitalize; font-weight: 700; color: var(--primary-color);">
-                                <?php echo STAGE_LABELS[$pig['stage']] ?? ucfirst(htmlspecialchars($pig['stage'])); ?>
-                            </td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Sire Tag (Father)</td>
-                            <td style="padding: 10px 12px;"><?php echo htmlspecialchars($pig['sire'] ?: 'Unknown'); ?></td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Dam Tag (Mother)</td>
-                            <td style="padding: 10px 12px;"><?php echo htmlspecialchars($pig['dam'] ?: 'Unknown'); ?></td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid #f0f0f0;">
-                            <td style="padding: 10px 12px; font-weight: 700; background: #fafafa;">Current Status</td>
-                            <td style="padding: 10px 12px;">
-                                <?php
-                                    $statusLabel = match($pig['status']) {
-                                        'sold'      => '🐖 Sold (Live Pig)',
-                                        'sold_meat' => '🥩 Sold for Meat / Pork',
-                                        'dead'      => '💀 Deceased',
-                                        'archived'  => '📦 Archived',
-                                        default     => 'Active'
-                                    };
-                                    $badgeBg = match($pig['status']) {
-                                        'sold'      => '#E3F2FD',
-                                        'sold_meat' => '#FFF3E0',
-                                        'dead'      => '#FFEBEE',
-                                        'archived'  => '#F5F5F5',
-                                        default     => '#E8F5E9'
-                                    };
-                                    $badgeClr = match($pig['status']) {
-                                        'sold'      => '#1565C0',
-                                        'sold_meat' => '#E65100',
-                                        'dead'      => '#C62828',
-                                        'archived'  => '#616161',
-                                        default     => 'var(--primary-color)'
-                                    };
-                                ?>
-                                <span class="badge" style="background: <?php echo $badgeBg; ?>; color: <?php echo $badgeClr; ?>; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 4px;">
-                                    <?php echo $statusLabel; ?>
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                    </span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Breed</span>
+                    <span class="pig-spec-value"><strong><?php echo htmlspecialchars($pig['breed'] ?: 'N/A'); ?></strong></span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Life Stage</span>
+                    <span class="pig-spec-value" style="color: var(--primary-color); font-weight: 700; text-transform: capitalize;">
+                        <?php echo STAGE_LABELS[$pig['stage']] ?? ucfirst(htmlspecialchars($pig['stage'])); ?>
+                    </span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Date of Birth &amp; Age</span>
+                    <span class="pig-spec-value">
+                        <?php echo htmlspecialchars($pig['dob']); ?> 
+                        <span style="color: var(--text-muted); font-size: 0.85rem;">(<strong><?php echo htmlspecialchars($pig['age_months']); ?> mos</strong> / <?php echo htmlspecialchars($pig['age_days_calc']); ?> days)</span>
+                    </span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Source &amp; Acquisition</span>
+                    <span class="pig-spec-value">
+                        <span class="badge" style="background: #E3F2FD; color: #1565C0; font-weight: 600; padding: 3px 8px; border-radius: 4px;"><?php echo htmlspecialchars($pig['source'] ?? 'Born on Farm'); ?></span>
+                        <?php if (($pig['source'] ?? '') === 'External Purchase' && !empty($pig['purchase_price'])): ?>
+                            <div style="margin-top: 4px; font-size: 0.88rem; color: #1565C0; font-weight: 700;">
+                                Cost: MWK <?php echo number_format($pig['purchase_price'], 2); ?>
+                                <?php if (!empty($pig['vendor'])): ?>
+                                    <span style="color: var(--text-muted); font-weight: 400; font-size: 0.82rem;">(Supplier: <?php echo htmlspecialchars($pig['vendor']); ?>)</span>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+                    </span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Sire (Father) Tag</span>
+                    <span class="pig-spec-value"><?php echo htmlspecialchars($pig['sire'] ?: 'Unknown / Not recorded'); ?></span>
+                </div>
+
+                <div class="pig-spec-item">
+                    <span class="pig-spec-label">Dam (Mother) Tag</span>
+                    <span class="pig-spec-value"><?php echo htmlspecialchars($pig['dam'] ?: 'Unknown / Not recorded'); ?></span>
+                </div>
+
+                <div class="pig-spec-item" style="grid-column: 1 / -1;">
+                    <span class="pig-spec-label">Inventory Status</span>
+                    <span class="pig-spec-value">
+                        <span class="pig-badge <?php echo $badgeStatusClass; ?>" style="font-size: 0.85rem; padding: 4px 10px;">
+                            <?php echo $statusLabel; ?>
+                        </span>
+                    </span>
+                </div>
             </div>
 
             <?php if (!empty($pig_sales)): ?>

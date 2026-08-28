@@ -26,7 +26,7 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
 $error = null;
 
 if (isset($_GET['error']) && $_GET['error'] === 'concurrent_session') {
-    $error = "Your session was terminated because this account logged in from another device or browser.";
+    $error = "⚠️ Active Session Terminated: This account was just logged in from another device or browser. To maintain farm data security, only one active device is allowed at a time.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {

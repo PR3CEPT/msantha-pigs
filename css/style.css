@@ -598,21 +598,209 @@ select.form-control option {
     margin-bottom: 1.25rem;
 }
 
-.pig-view-header {
+/* ==========================================================================
+   Modern Pig Details & Profile Component
+   ========================================================================== */
+.pig-hero-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.pig-hero-top {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.pig-avatar-wrap {
+    flex-shrink: 0;
+}
+
+.pig-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: #E8F5E9;
+    border: 2px solid #C8E6C9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    box-shadow: 0 2px 8px rgba(46, 125, 50, 0.12);
+}
+
+.pig-hero-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pig-hero-badge-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.pig-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pig-badge.badge-active { background: #E8F5E9; color: #1B5E20; }
+.pig-badge.badge-sold { background: #E3F2FD; color: #1565C0; }
+.pig-badge.badge-meat { background: #FFF3E0; color: #E65100; }
+.pig-badge.badge-dead { background: #FFEBEE; color: #C62828; }
+.pig-badge.badge-archived { background: #ECEFF1; color: #37474F; }
+.pig-badge.stage-badge { background: #F3E5F5; color: #6A1B9A; }
+.pig-badge.sex-badge { background: #E0F2F1; color: #00695C; }
+
+.pig-hero-title {
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 2px 0 4px;
+    line-height: 1.2;
+}
+
+.pig-hero-meta {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.pig-hero-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    background: #F9FAFB;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+
+.pig-kpi-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.pig-kpi-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.pig-kpi-label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #6B7280;
+    letter-spacing: 0.5px;
+    line-height: 1.2;
+}
+
+.pig-kpi-val {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pig-actions-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 1rem;
+}
+
+.pig-action-btn {
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.pig-archive-btn {
+    border-color: #546E7A;
+    color: #37474F;
+}
+.pig-archive-btn:hover {
+    background: #546E7A;
+    color: #fff;
+}
+
+/* Pig Full Profile Spec Card */
+.pig-spec-card {
+    padding: 1.25rem 1.5rem;
+}
+
+.pig-spec-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 1.25rem;
+    margin-bottom: 12px;
+    border-bottom: 2px solid var(--bg-color);
+    padding-bottom: 8px;
 }
 
-.pig-view-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
+.pig-spec-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 16px;
 }
+
+.pig-spec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #FAFAFA;
+    border: 1px solid #F0F0F0;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.pig-spec-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #6B7280;
+    letter-spacing: 0.5px;
+}
+
+.pig-spec-value {
+    font-size: 0.95rem;
+    color: #111827;
+    font-weight: 600;
+    word-break: break-word;
+}
+
 
 .dashboard-header h2 {
     font-size: 1.35rem;
@@ -2472,87 +2660,88 @@ select.form-control option {
         box-sizing: border-box !important;
     }
 
-    /* Pig View Page Mobile Alignment & Full Responsiveness */
-    .pig-view-header {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 10px !important;
-        width: 100% !important;
+    /* ── PIG PROFILE MOBILE ENGINES & ACTIONS BAR ── */
+    .pig-hero-card {
+        padding: 1rem 1rem !important;
+        border-radius: 14px !important;
+        gap: 12px !important;
         box-sizing: border-box !important;
     }
 
-    .pig-view-header h2 {
-        word-break: break-word !important;
-        overflow-wrap: break-word !important;
-        font-size: 1.25rem !important;
+    .pig-hero-top {
+        gap: 12px !important;
     }
 
-    .pig-view-actions {
-        display: flex !important;
-        flex-wrap: wrap !important;
+    .pig-avatar {
+        width: 52px !important;
+        height: 52px !important;
+        font-size: 1.6rem !important;
+        border-radius: 12px !important;
+    }
+
+    .pig-hero-title {
+        font-size: 1.25rem !important;
+        word-break: break-word !important;
+    }
+
+    .pig-hero-meta {
+        font-size: 0.8rem !important;
+        line-height: 1.35 !important;
+    }
+
+    .pig-hero-kpi-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        padding: 8px 10px !important;
+    }
+
+    .pig-kpi-pill {
+        gap: 8px !important;
+    }
+
+    .pig-kpi-icon {
+        font-size: 1.15rem !important;
+    }
+
+    .pig-kpi-val {
+        font-size: 0.86rem !important;
+    }
+
+    .pig-actions-bar {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
         gap: 6px !important;
         width: 100% !important;
+        padding-top: 10px !important;
         box-sizing: border-box !important;
     }
 
-    .pig-view-actions .btn,
-    .pig-view-actions a.btn,
-    .pig-view-actions button.btn {
-        flex: 1 1 calc(50% - 4px) !important;
+    .pig-actions-bar .btn,
+    .pig-actions-bar a.btn,
+    .pig-actions-bar button.btn,
+    .pig-action-btn {
+        width: 100% !important;
+        padding: 9px 6px !important;
+        font-size: 0.78rem !important;
         text-align: center !important;
         justify-content: center !important;
-        min-width: 0 !important;
-        padding: 8px 6px !important;
-        font-size: 0.76rem !important;
         box-sizing: border-box !important;
+        margin: 0 !important;
         white-space: normal !important;
         line-height: 1.2 !important;
     }
 
-    .pig-card-table {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
+    .pig-spec-card {
+        padding: 12px 10px !important;
     }
 
-    .pig-card-table tbody {
-        display: block !important;
-        width: 100% !important;
+    .pig-spec-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
     }
 
-    .pig-card-table tr {
-        display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
-        padding: 8px 4px !important;
-        border-bottom: 1px solid #f0f0f0 !important;
-        box-sizing: border-box !important;
-    }
-
-    .pig-card-table td {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        word-break: break-word !important;
-        overflow-wrap: break-word !important;
-        background: transparent !important;
-    }
-
-    .pig-card-table td:first-child {
-        font-size: 0.72rem !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-        font-weight: 700 !important;
-        color: var(--text-muted) !important;
-        padding: 2px 0 !important;
-    }
-
-    .pig-card-table td:last-child {
-        font-size: 0.92rem !important;
-        font-weight: 600 !important;
-        color: var(--text-main) !important;
-        padding: 2px 0 4px 0 !important;
+    .pig-spec-item {
+        padding: 8px 10px !important;
     }
 }
 
@@ -2562,14 +2751,12 @@ select.form-control option {
         grid-template-columns: 1fr !important;
     }
 
-    .dashboard-header .btn, 
-    .dashboard-header a.btn, 
-    .dashboard-header button.btn,
-    .pig-view-actions .btn,
-    .pig-view-actions a.btn,
-    .pig-view-actions button.btn {
-        flex: 1 1 100% !important;
-        width: 100% !important;
+    .pig-hero-kpi-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .pig-actions-bar {
+        grid-template-columns: 1fr 1fr !important;
     }
 
     .modal-content {

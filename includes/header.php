@@ -178,4 +178,45 @@ if (isset($_SESSION['user_id'])) {
         });
     });
 })();
+
+// Real-Time Active Single-Session Concurrency Heartbeat
+(function() {
+    <?php if (isset($_SESSION['user_id'])): ?>
+    let sessionCheckTimer = null;
+    let isChecking = false;
+
+    function verifyActiveSession() {
+        if (isChecking) return;
+        isChecking = true;
+        fetch('session_check.php', {
+            method: 'GET',
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            isChecking = false;
+            if (data && data.valid === false) {
+                if (sessionCheckTimer) clearInterval(sessionCheckTimer);
+                alert('⚠️ Session Terminated: Your account was logged in from another device or browser.');
+                window.location.href = data.redirect || 'login.php?error=concurrent_session';
+            }
+        })
+        .catch(() => {
+            isChecking = false;
+        });
+    }
+
+    // Check every 10 seconds in the background
+    sessionCheckTimer = setInterval(verifyActiveSession, 10000);
+
+    // Also check immediately whenever user focuses window or returns to tab
+    window.addEventListener('focus', verifyActiveSession);
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            verifyActiveSession();
+        }
+    });
+    <?php endif; ?>
+})();
 </script>
