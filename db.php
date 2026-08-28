@@ -42,6 +42,7 @@ try {
             password VARCHAR(255) NOT NULL,
             role VARCHAR(20) NOT NULL,
             phone VARCHAR(20),
+            email VARCHAR(100) NULL,
             full_name VARCHAR(100),
             session_token VARCHAR(64) NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
@@ -238,6 +239,12 @@ try {
         $pdo->query("SELECT session_token FROM users LIMIT 1");
     } catch (PDOException $e) {
         try { $pdo->exec("ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL"); } catch (PDOException $ex) {}
+    }
+
+    try {
+        $pdo->query("SELECT email FROM users LIMIT 1");
+    } catch (PDOException $e) {
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN email VARCHAR(100) NULL AFTER phone"); } catch (PDOException $ex) {}
     }
 
     // Convert tables to utf8mb4_unicode_ci

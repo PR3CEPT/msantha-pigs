@@ -10,17 +10,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_user'])) {
     $username = trim($_POST['username'] ?? '');
     $full_name = trim($_POST['full_name'] ?? '');
     $role = $_POST['role'] ?? 'clerk';
+    $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $password = $_POST['password'] ?? '';
 
     if (empty($username) || empty($password) || empty($full_name)) {
         $error = "Username, Full Name, and Password are required.";
+    } else if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please provide a valid email address.";
     } else {
         try {
             $pdo->beginTransaction();
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, phone) VALUES (?, ?, ?, ?, ?)");
-            $stmt->execute([$username, $hash, $role, $full_name, $phone]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, email, phone) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$username, $hash, $role, $full_name, $email ?: null, $phone]);
             logActivity($pdo, 'user_created', "Created new system user account '$username' ('$full_name') with role '" . ucfirst($role) . "'");
             $pdo->commit();
             $msg = "New system user '$username' created successfully!";
@@ -38,29 +41,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_user'])) {
     $targetId = $_POST['user_id'] ?? null;
     $full_name = trim($_POST['full_name'] ?? '');
     $role = $_POST['role'] ?? 'clerk';
+    $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $password = $_POST['password'] ?? '';
 
     if ($targetId) {
-        try {
-            $pdo->beginTransaction();
-            if (!empty($password)) {
-                $hash = password_hash($password, PASSWORD_DEFAULT);
-                $stmt = $pdo->prepare("UPDATE users SET full_name = ?, role = ?, phone = ?, password = ? WHERE id = ?");
-                $stmt->execute([$full_name, $role, $phone, $hash, $targetId]);
-                logActivity($pdo, 'user_updated', "Updated user account '$full_name' (ID #$targetId) details and reset password");
-            } else {
-                $stmt = $pdo->prepare("UPDATE users SET full_name = ?, role = ?, phone = ? WHERE id = ?");
-                $stmt->execute([$full_name, $role, $phone, $targetId]);
-                logActivity($pdo, 'user_updated', "Updated user account '$full_name' (ID #$targetId) details");
+        if (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = "Please provide a valid email address.";
+        } else {
+            try {
+                $pdo->beginTransaction();
+                if (!empty($password)) {
+                    $hash = password_hash($password, PASSWORD_DEFAULT);
+                    $stmt = $pdo->prepare("UPDATE users SET full_name = ?, role = ?, email = ?, phone = ?, password = ? WHERE id = ?");
+                    $stmt->execute([$full_name, $role, $email ?: null, $phone, $hash, $targetId]);
+                    logActivity($pdo, 'user_updated', "Updated user account '$full_name' (ID #$targetId) details and reset password");
+                } else {
+                    $stmt = $pdo->prepare("UPDATE users SET full_name = ?, role = ?, email = ?, phone = ? WHERE id = ?");
+                    $stmt->execute([$full_name, $role, $email ?: null, $phone, $targetId]);
+                    logActivity($pdo, 'user_updated', "Updated user account '$full_name' (ID #$targetId) details");
+                }
+                $pdo->commit();
+                $msg = "User account updated successfully!";
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $error = "Failed to update user account: " . $e->getMessage();
             }
-            $pdo->commit();
-            $msg = "User account updated successfully!";
-        } catch (Exception $e) {
-            if ($pdo->inTransaction()) {
-                $pdo->rollBack();
-            }
-            $error = "Failed to update user account: " . $e->getMessage();
         }
     }
 }
@@ -97,13 +105,14 @@ include 'includes/header.php';
                         <th>Username</th>
                         <th>Full Name</th>
                         <th>Role</th>
+                        <th>Email</th>
                         <th>Phone</th>
                         <th style="text-align: right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($users)): ?>
-                        <tr class="tbl-empty"><td colspan="6">No user accounts found.</td></tr>
+                        <tr class="tbl-empty"><td colspan="7">No user accounts found.</td></tr>
                     <?php else: ?>
                         <?php foreach ($users as $u): ?>
                             <tr>
@@ -115,6 +124,7 @@ include 'includes/header.php';
                                         <?php echo ucfirst(htmlspecialchars($u['role'])); ?>
                                     </span>
                                 </td>
+                                <td><?php echo htmlspecialchars($u['email'] ?: '—'); ?></td>
                                 <td><?php echo htmlspecialchars($u['phone'] ?: 'N/A'); ?></td>
                                 <td style="text-align: right;">
                                     <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; white-space: nowrap;" 
@@ -147,6 +157,10 @@ include 'includes/header.php';
                             <div class="user-card-row">
                                 <span class="user-card-label">Full Name:</span>
                                 <span class="user-card-val"><?php echo htmlspecialchars($u['full_name']); ?></span>
+                            </div>
+                            <div class="user-card-row">
+                                <span class="user-card-label">Email:</span>
+                                <span class="user-card-val"><?php echo htmlspecialchars($u['email'] ?: '—'); ?></span>
                             </div>
                             <div class="user-card-row">
                                 <span class="user-card-label">Phone:</span>
@@ -187,6 +201,10 @@ include 'includes/header.php';
                     <option value="clerk">Clerk (Farm Operator)</option>
                     <option value="admin">Admin (Full Access)</option>
                 </select>
+            </div>
+            <div class="form-group">
+                <label for="new_email">Email Address</label>
+                <input type="email" id="new_email" name="email" class="form-control" placeholder="e.g. jbanda@msanthapigs.mw">
             </div>
             <div class="form-group">
                 <label for="new_phone">Phone Number</label>
@@ -233,6 +251,10 @@ include 'includes/header.php';
                 </select>
             </div>
             <div class="form-group">
+                <label for="edit_email">Email Address</label>
+                <input type="email" id="edit_email" name="email" class="form-control" placeholder="e.g. user@msanthapigs.mw">
+            </div>
+            <div class="form-group">
                 <label for="edit_phone">Phone Number</label>
                 <input type="text" id="edit_phone" name="phone" class="form-control">
             </div>
@@ -265,6 +287,7 @@ include 'includes/header.php';
         document.getElementById('edit_username').value = user.username;
         document.getElementById('edit_full_name').value = user.full_name;
         document.getElementById('edit_role').value = user.role;
+        document.getElementById('edit_email').value = user.email || '';
         document.getElementById('edit_phone').value = user.phone || '';
         document.getElementById('edit_pass').value = '';
         openModal('editUserModal');
