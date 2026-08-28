@@ -427,17 +427,32 @@ define('STAGE_LABELS', [
 
 // ============================================================
 //  PUSH NOTIFICATION HELPER
+// ============================================================
+//  NOTIFICATION PUSHER (With Deduplication & Auto-Purge)
 //  Creates a notification record in the notifications table.
 //  type: 'info' | 'warning' | 'alert' | 'success'
 // ============================================================
 function pushNotification($pdo, $type, $title, $message, $pigId = null) {
     try {
-        // Avoid duplicate unread notifications for the same pig+title combo
-        if ($pigId !== null) {
-            $dup = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE pig_id = ? AND title = ? AND is_read = 0");
-            $dup->execute([$pigId, $title]);
-            if ($dup->fetchColumn() > 0) return; // Already notified
+        // Auto-purge temporal notifications: remove read alerts older than 7 days, and all alerts older than 30 days
+        static $purged = false;
+        if (!$purged) {
+            $pdo->exec("DELETE FROM notifications WHERE is_read = 1 AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)");
+            $pdo->exec("DELETE FROM notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            $purged = true;
         }
+
+        // Check if this notification already exists within the last 24 hours (whether read or unread)
+        if ($pigId !== null) {
+            $dup = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE pig_id = ? AND title = ? AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+            $dup->execute([$pigId, $title]);
+            if ($dup->fetchColumn() > 0) return; // Already recorded within last 24 hours
+        } else {
+            $dup = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE title = ? AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)");
+            $dup->execute([$title]);
+            if ($dup->fetchColumn() > 0) return;
+        }
+
         $stmt = $pdo->prepare("INSERT INTO notifications (type, title, message, pig_id) VALUES (?, ?, ?, ?)");
         $stmt->execute([$type, $title, $message, $pigId]);
     } catch (Exception $e) {
@@ -502,10 +517,10 @@ function checkStageTransitions($pdo, $PIG_STAGE_SQL) {
 
 // ============================================================
 //  SYSTEM ALERT GENERATOR
-//  Runs on every page load. Generates notifications for:
+//  Runs on session checks. Generates notifications for:
 //   - Pregnant sows overdue (farrow date passed, still 'pregnant')
 //   - Pregnant sows due within 7 days
-//  These are de-duplicated via pushNotification().
+//  These are de-duplicated via pushNotification() (24h cooldown).
 // ============================================================
 function generateSystemAlerts($pdo) {
     try {
@@ -525,7 +540,7 @@ function generateSystemAlerts($pdo) {
             pushNotification($pdo,
                 'alert',
                 "🚨 Overdue Sow: #{$row['tag_no']}",
-                "Sow #{$row['tag_no']} ({$row['breed']}) is overdue by $days day(s). Expected farrowing: {$row['expected_farrowing']}. Please check immediately.",
+                "Sow #{$row['tag_no']} ({$row['breed']}) is overdue by $days day(s). Expected farrowing: {$row['expected_farrowing']}. Please inspect farrowing unit.",
                 $row['pig_id']
             );
         }
@@ -540,13 +555,11 @@ function generateSystemAlerts($pdo) {
         ")->fetchAll();
 
         foreach ($dueSoon as $row) {
-            $days = (int)(new DateTime($row['expected_farrowing']))->diff(new DateTime())->days;
-            $days = max(0, (int)((new DateTime($row['expected_farrowing']))->diff(new DateTime('today')))->format('%r%a') * -1 + (int)((new DateTime($row['expected_farrowing']))->diff(new DateTime('today')))->days );
             $daysLeft = (int)(new DateTime('today'))->diff(new DateTime($row['expected_farrowing']))->days;
             pushNotification($pdo,
                 'warning',
                 "⌛ Sow Due Soon: #{$row['tag_no']}",
-                "Sow #{$row['tag_no']} ({$row['breed']}) is due to farrow in $daysLeft day(s) on {$row['expected_farrowing']}. Prepare farrowing pen.",
+                "Sow #{$row['tag_no']} ({$row['breed']}) is due to farrow in $daysLeft day(s) on {$row['expected_farrowing']}. Prepare clean pen.",
                 $row['pig_id']
             );
         }

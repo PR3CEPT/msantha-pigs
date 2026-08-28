@@ -1,4 +1,4 @@
-const CACHE_NAME = 'msantha-pigs-v21';
+const CACHE_NAME = 'msantha-pigs-v22';
 const ASSETS_TO_CACHE = [
   './',
   './index.php',

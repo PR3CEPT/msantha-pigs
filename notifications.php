@@ -34,11 +34,16 @@ include 'includes/header.php';
             <h2>🔔 System Notifications</h2>
             <p>All system alerts: stage transitions, farrowing reminders, overdue sows, and livestock updates.</p>
         </div>
-        <?php if ($totalUnread > 0): ?>
-            <button class="btn btn-primary" onclick="markAllRead()" style="display:flex; align-items:center; gap:6px;">
-                ✓ Mark All <?php echo $totalUnread; ?> as Read
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <?php if ($totalUnread > 0): ?>
+                <button class="btn btn-primary" onclick="markAllRead()" style="display:flex; align-items:center; gap:6px;">
+                    ✓ Mark All (<?php echo $totalUnread; ?>) Read
+                </button>
+            <?php endif; ?>
+            <button class="btn btn-outline" onclick="clearReadNotifs()" style="display:flex; align-items:center; gap:6px;">
+                🗑️ Clear Read Alerts
             </button>
-        <?php endif; ?>
+        </div>
     </div>
 
     <!-- KPI Cards -->
@@ -46,7 +51,7 @@ include 'includes/header.php';
         <div class="kpi-card kpi-total">
             <div class="kpi-icon">🔔</div>
             <div class="kpi-details">
-                <h3>Total Notifications</h3>
+                <h3>Total Active Alerts</h3>
                 <p class="kpi-value"><?php echo number_format(count($notifs)); ?></p>
             </div>
         </div>
@@ -166,6 +171,7 @@ include 'includes/header.php';
                         <?php if (!$n['is_read']): ?>
                             <button class="btn btn-outline" onclick="markOneRead(<?php echo $n['id']; ?>)" style="padding:4px 10px; font-size:0.78rem;">✓ Mark Read</button>
                         <?php endif; ?>
+                        <button class="btn btn-outline" onclick="deleteOneNotif(<?php echo $n['id']; ?>)" style="padding:4px 10px; font-size:0.78rem; color:#C62828; border-color:#FFCDD2;" title="Dismiss alert">✕ Dismiss</button>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -191,11 +197,36 @@ function markOneRead(id) {
     });
 }
 
+function deleteOneNotif(id) {
+    fetch('notify_read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=delete_one&id=' + id
+    }).then(() => {
+        const card = document.getElementById('notif-' + id);
+        if (card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.95)';
+            setTimeout(() => card.remove(), 300);
+        }
+    });
+}
+
 function markAllRead() {
     fetch('notify_read.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: 'action=mark_all'
+    }).then(() => location.reload());
+}
+
+function clearReadNotifs() {
+    if (!confirm('Are you sure you want to permanently clear all read alerts?')) return;
+    fetch('notify_read.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=clear_read'
     }).then(() => location.reload());
 }
 </script>
