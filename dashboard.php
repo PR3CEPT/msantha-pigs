@@ -79,6 +79,7 @@ include 'includes/header.php';
 
     <div class="dashboard-content">
         <div class="card recent-activity">
+            <?php if ($_SESSION['user_role'] === 'admin'): ?>
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;">
                 <h3 style="margin: 0;">📋 Live System Audit Feed</h3>
                 <a href="logs.php" style="font-size: 0.85rem; color: var(--primary-color); font-weight: 600; text-decoration: none;">View All Logs &rarr;</a>
@@ -114,6 +115,7 @@ include 'includes/header.php';
             </div>
 
             <hr style="margin: 20px 0 15px; border: 0; border-top: 1px solid var(--border-color);">
+            <?php endif; ?>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h3 style="margin: 0; color: #E65100;">🤰 Maternity &amp; Farrowing Watch</h3>

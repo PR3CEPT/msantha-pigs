@@ -52,15 +52,6 @@ include 'includes/header.php';
 
 <div class="dashboard-wrapper">
 
-    <!-- Printable Invoice Header (Hidden on screen, visible on print) -->
-    <div class="print-only-header" style="display:none;">
-        <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #2E7D32; padding-bottom: 12px;">
-            <h2 style="color: #2E7D32; margin: 0;">Msantha Investments &amp; General Suppliers (MIGS)</h2>
-            <p style="margin: 2px 0; font-size: 0.9rem; color: #555;">Liwonde, Machinga, Malawi | Tel: +265 888 880 057</p>
-            <h3 style="margin: 8px 0 0; text-transform: uppercase;"><?php echo $typeTitle; ?></h3>
-        </div>
-    </div>
-
     <!-- Transaction Hero Card -->
     <div class="pig-hero-card" style="border-left: 5px solid <?php echo $isPurchase ? '#C62828' : ($isMeat ? '#E65100' : '#2E7D32'); ?>;">
         <div class="pig-hero-top">
@@ -120,7 +111,6 @@ include 'includes/header.php';
 
         <!-- Action Buttons -->
         <div class="pig-actions-bar">
-            <button class="btn btn-primary pig-action-btn" onclick="window.print()">🖨️ Print Receipt / Invoice</button>
             <?php if (!empty($trans['pig_db_id'])): ?>
                 <a href="pig_view.php?id=<?php echo $trans['pig_db_id']; ?>" class="btn btn-success pig-action-btn">🐖 View Pig #<?php echo htmlspecialchars($trans['reference_id']); ?></a>
             <?php endif; ?>
@@ -225,35 +215,5 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
-
-<style>
-@media print {
-    body {
-        background: #fff !important;
-    }
-    .sidebar, .topbar, .pig-actions-bar, .mobile-toggle-btn, .sidebar-overlay, .landing-header, .modern-app-footer {
-        display: none !important;
-    }
-    .main-content {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .content-area {
-        padding: 0 !important;
-    }
-    .print-only-header {
-        display: block !important;
-    }
-    .pig-hero-card {
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-        padding: 15px !important;
-    }
-    .pig-spec-card {
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-    }
-}
-</style>
 
 <?php include 'includes/footer.php'; ?>
