@@ -2,26 +2,30 @@
 require_once 'db.php';
 requireLogin();
 
-// Fetch KPIs
-$totalPigs = $pdo->query("SELECT COUNT(*) FROM pigs WHERE status = 'active'")->fetchColumn();
-$males = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND status = 'active'")->fetchColumn();
-$females = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Female' AND status = 'active'")->fetchColumn();
-$weaners = $pdo->query("SELECT COUNT(*) FROM pigs WHERE stage IN ('weaner', 'piglet') AND status = 'active'")->fetchColumn();
-$pregnant = $pdo->query("SELECT COUNT(*) FROM breeding_records WHERE status = 'pregnant'")->fetchColumn();
+// Fetch KPIs with defensive try/catch blocks
+try { $totalPigs = (int)$pdo->query("SELECT COUNT(*) FROM pigs WHERE status = 'active'")->fetchColumn(); } catch (Exception $e) { $totalPigs = 0; }
+try { $males = (int)$pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND status = 'active'")->fetchColumn(); } catch (Exception $e) { $males = 0; }
+try { $females = (int)$pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Female' AND status = 'active'")->fetchColumn(); } catch (Exception $e) { $females = 0; }
+try { $weaners = (int)$pdo->query("SELECT COUNT(*) FROM pigs WHERE stage IN ('weaner', 'piglet') AND status = 'active'")->fetchColumn(); } catch (Exception $e) { $weaners = 0; }
+try { $pregnant = (int)$pdo->query("SELECT COUNT(*) FROM breeding_records WHERE status = 'pregnant'")->fetchColumn(); } catch (Exception $e) { $pregnant = 0; }
 
 // Male Castration Breakdown
-$intactBoars = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND (castrated = 0 OR castrated IS NULL) AND status = 'active'")->fetchColumn();
-$castratedBarrows = $pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND castrated = 1 AND status = 'active'")->fetchColumn();
+try { $intactBoars = (int)$pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND (castrated = 0 OR castrated IS NULL) AND status = 'active'")->fetchColumn(); } catch (Exception $e) { $intactBoars = 0; }
+try { $castratedBarrows = (int)$pdo->query("SELECT COUNT(*) FROM pigs WHERE sex = 'Male' AND castrated = 1 AND status = 'active'")->fetchColumn(); } catch (Exception $e) { $castratedBarrows = 0; }
 
 // Fetch Maternity Watch (Pregnant Sows & Expected Farrowing Countdowns)
-$maternityWatch = $pdo->query("SELECT b.*, p.tag_no, p.breed, p.id as pig_id FROM breeding_records b JOIN pigs p ON b.pig_id = p.id WHERE b.status = 'pregnant' ORDER BY b.expected_farrowing ASC LIMIT 10")->fetchAll();
+try {
+    $maternityWatch = $pdo->query("SELECT b.*, p.tag_no, p.breed, p.id as pig_id FROM breeding_records b JOIN pigs p ON b.pig_id = p.id WHERE b.status = 'pregnant' ORDER BY b.expected_farrowing ASC LIMIT 10")->fetchAll();
+} catch (Exception $e) {
+    $maternityWatch = [];
+}
 
 // Fetch Recent Sales & Activity
-$recentSales = $pdo->query("SELECT * FROM sales ORDER BY date DESC LIMIT 3")->fetchAll();
-$recentVaccines = $pdo->query("SELECT v.*, p.tag_no FROM vaccination_records v JOIN pigs p ON v.pig_id = p.id ORDER BY v.date DESC LIMIT 3")->fetchAll();
+try { $recentSales = $pdo->query("SELECT * FROM sales ORDER BY date DESC LIMIT 3")->fetchAll(); } catch (Exception $e) { $recentSales = []; }
+try { $recentVaccines = $pdo->query("SELECT v.*, p.tag_no FROM vaccination_records v JOIN pigs p ON v.pig_id = p.id ORDER BY v.date DESC LIMIT 3")->fetchAll(); } catch (Exception $e) { $recentVaccines = []; }
 
 // Fetch Recent System Activity Logs
-$recentSystemLogs = $pdo->query("SELECT * FROM activity_logs ORDER BY id DESC LIMIT 5")->fetchAll();
+try { $recentSystemLogs = $pdo->query("SELECT * FROM activity_logs ORDER BY id DESC LIMIT 5")->fetchAll(); } catch (Exception $e) { $recentSystemLogs = []; }
 
 include 'includes/header.php';
 ?>

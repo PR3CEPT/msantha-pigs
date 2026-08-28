@@ -29,184 +29,122 @@ try {
 }
 
 try {
-    // Auto-migrate database & tables to utf8mb4 to prevent notification question marks (?)
+    // Auto-migrate database to utf8mb4
     try {
         $pdo->exec("ALTER DATABASE `$dbname` CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci");
     } catch (PDOException $e) {}
 
-    // Auto-create database tables if users table is missing
+    // 1. users table
     try {
-        $pdo->query("SELECT 1 FROM users LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                role VARCHAR(20) NOT NULL,
-                phone VARCHAR(20),
-                full_name VARCHAR(100)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(20) NOT NULL,
+            phone VARCHAR(20),
+            full_name VARCHAR(100),
+            session_token VARCHAR(64) NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-            CREATE TABLE IF NOT EXISTS pigs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                tag_no VARCHAR(50) UNIQUE NOT NULL,
-                sex VARCHAR(10) NOT NULL,
-                breed VARCHAR(50),
-                dob DATE NOT NULL,
-                sire VARCHAR(50),
-                dam VARCHAR(50),
-                status VARCHAR(20) DEFAULT 'active',
-                stage VARCHAR(20) DEFAULT 'adult',
-                source VARCHAR(50) DEFAULT 'Born on Farm',
-                castrated TINYINT(1) DEFAULT 0,
-                castration_date DATE NULL,
-                last_known_stage VARCHAR(20) DEFAULT NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS growth_records (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                pig_id INT NOT NULL,
-                date DATE NOT NULL,
-                weight DECIMAL(10,2),
-                age_days INT,
-                remarks TEXT,
-                FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS breeding_records (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                pig_id INT NOT NULL,
-                date_of_service DATE NOT NULL,
-                sire_no VARCHAR(50),
-                expected_farrowing DATE,
-                actual_farrowing DATE,
-                total_born INT,
-                born_alive INT,
-                stillborn INT,
-                avg_weaning_wt DECIMAL(10,2),
-                weaning_date DATE NULL,
-                weaned_count INT NULL,
-                status VARCHAR(20) DEFAULT 'pregnant',
-                FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS vaccination_records (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                pig_id INT NOT NULL,
-                date DATE NOT NULL,
-                vaccine VARCHAR(100),
-                dose VARCHAR(50),
-                route VARCHAR(50),
-                administered_by VARCHAR(100),
-                remarks TEXT,
-                FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS sales (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                type VARCHAR(20) NOT NULL,
-                reference_id VARCHAR(50),
-                weight DECIMAL(10,2),
-                date DATE NOT NULL,
-                amount DECIMAL(10,2),
-                buyer_info VARCHAR(255),
-                remarks TEXT
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS mortality (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                pig_id INT NOT NULL,
-                date DATE NOT NULL,
-                cause VARCHAR(255),
-                remarks TEXT,
-                FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS activity_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NULL,
-                username VARCHAR(50) NOT NULL,
-                user_role VARCHAR(20) DEFAULT 'clerk',
-                action VARCHAR(50) NOT NULL,
-                description TEXT NOT NULL,
-                ip_address VARCHAR(45) DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-            CREATE TABLE IF NOT EXISTS notifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                type VARCHAR(30) NOT NULL DEFAULT 'info',
-                title VARCHAR(120) NOT NULL,
-                message TEXT NOT NULL,
-                pig_id INT NULL,
-                is_read TINYINT(1) DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        ");
-    }
-
-    // Auto-seed admin and clerk users if they don't exist
-    $stmt = $pdo->query("SELECT COUNT(*) FROM users");
-    $count = $stmt->fetchColumn();
-
-    if ($count == 0) {
-        $adminHash = password_hash('admin123', PASSWORD_DEFAULT);
-        $clerkHash = password_hash('clerk123', PASSWORD_DEFAULT);
-        
-        $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, phone) VALUES (?, ?, ?, ?, ?)");
-        $insertStmt->execute(['admin', $adminHash, 'admin', 'System Admin', '0000000000']);
-        $insertStmt->execute(['clerk', $clerkHash, 'clerk', 'Farm Clerk', '0000000000']);
-    }
-
-    // Ensure 'source' column exists in pigs table
+    // 2. pigs table
     try {
-        $pdo->query("SELECT source FROM pigs LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN source VARCHAR(50) DEFAULT 'Born on Farm'");
-    }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS pigs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            tag_no VARCHAR(50) UNIQUE NOT NULL,
+            sex VARCHAR(10) NOT NULL,
+            breed VARCHAR(50),
+            dob DATE NOT NULL,
+            sire VARCHAR(50),
+            dam VARCHAR(50),
+            status VARCHAR(20) DEFAULT 'active',
+            stage VARCHAR(20) DEFAULT 'adult',
+            source VARCHAR(50) DEFAULT 'Born on Farm',
+            castrated TINYINT(1) DEFAULT 0,
+            castration_date DATE NULL,
+            last_known_stage VARCHAR(20) DEFAULT NULL,
+            purchase_price DECIMAL(10,2) NULL,
+            vendor VARCHAR(255) NULL,
+            acquisition_type VARCHAR(30) DEFAULT 'born'
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-    // Ensure 'castrated' and 'castration_date' columns exist in pigs table
+    // 3. growth_records table
     try {
-        $pdo->query("SELECT castrated FROM pigs LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN castrated TINYINT(1) DEFAULT 0");
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN castration_date DATE NULL");
-    }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS growth_records (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            pig_id INT NOT NULL,
+            date DATE NOT NULL,
+            weight DECIMAL(10,2),
+            age_days INT,
+            remarks TEXT,
+            FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-    // Ensure 'weaning_date' and 'weaned_count' columns exist in breeding_records table
+    // 4. breeding_records table
     try {
-        $pdo->query("SELECT weaning_date FROM breeding_records LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE breeding_records ADD COLUMN weaning_date DATE NULL");
-        $pdo->exec("ALTER TABLE breeding_records ADD COLUMN weaned_count INT NULL");
-    }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS breeding_records (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            pig_id INT NOT NULL,
+            date_of_service DATE NOT NULL,
+            sire_no VARCHAR(50),
+            expected_farrowing DATE,
+            actual_farrowing DATE,
+            total_born INT,
+            born_alive INT,
+            stillborn INT,
+            avg_weaning_wt DECIMAL(10,2),
+            weaning_date DATE NULL,
+            weaned_count INT NULL,
+            status VARCHAR(20) DEFAULT 'pregnant',
+            FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-    // Ensure 'session_token' column exists in users table
+    // 5. vaccination_records table
     try {
-        $pdo->query("SELECT session_token FROM users LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL");
-    }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS vaccination_records (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            pig_id INT NOT NULL,
+            date DATE NOT NULL,
+            vaccine VARCHAR(100),
+            dose VARCHAR(50),
+            route VARCHAR(50),
+            administered_by VARCHAR(100),
+            remarks TEXT,
+            FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-    // Ensure 'purchase_price', 'vendor', and 'acquisition_type' columns exist in pigs table
+    // 6. sales table
     try {
-        $pdo->query("SELECT purchase_price FROM pigs LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN purchase_price DECIMAL(10,2) NULL");
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN vendor VARCHAR(255) NULL");
-    }
-    try {
-        $pdo->query("SELECT acquisition_type FROM pigs LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN acquisition_type VARCHAR(30) DEFAULT 'born'");
-    }
+        $pdo->exec("CREATE TABLE IF NOT EXISTS sales (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            type VARCHAR(20) NOT NULL,
+            reference_id VARCHAR(50),
+            weight DECIMAL(10,2),
+            date DATE NOT NULL,
+            amount DECIMAL(10,2),
+            buyer_info VARCHAR(255),
+            remarks TEXT
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-    // Ensure 'activity_logs' table exists
+    // 7. mortality table
     try {
-        $pdo->query("SELECT 1 FROM activity_logs LIMIT 1");
-    } catch (PDOException $e) {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS mortality (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            pig_id INT NOT NULL,
+            date DATE NOT NULL,
+            cause VARCHAR(255),
+            remarks TEXT,
+            FOREIGN KEY(pig_id) REFERENCES pigs(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
+
+    // 8. activity_logs table
+    try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS activity_logs (
             id INT AUTO_INCREMENT PRIMARY KEY,
             user_id INT NULL,
@@ -217,20 +155,11 @@ try {
             ip_address VARCHAR(45) DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
-        )");
-    }
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
 
-    // Ensure 'last_known_stage' column exists so we can detect stage transitions
+    // 9. notifications table
     try {
-        $pdo->query("SELECT last_known_stage FROM pigs LIMIT 1");
-    } catch (PDOException $e) {
-        $pdo->exec("ALTER TABLE pigs ADD COLUMN last_known_stage VARCHAR(20) DEFAULT NULL");
-    }
-
-    // Ensure 'notifications' table exists
-    try {
-        $pdo->query("SELECT 1 FROM notifications LIMIT 1");
-    } catch (PDOException $e) {
         $pdo->exec("CREATE TABLE IF NOT EXISTS notifications (
             id INT AUTO_INCREMENT PRIMARY KEY,
             type VARCHAR(30) NOT NULL DEFAULT 'info',
@@ -239,7 +168,76 @@ try {
             pig_id INT NULL,
             is_read TINYINT(1) DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )");
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (PDOException $e) {}
+
+    // Auto-seed admin and clerk users if they don't exist
+    try {
+        $stmt = $pdo->query("SELECT COUNT(*) FROM users");
+        $count = $stmt->fetchColumn();
+
+        if ($count == 0) {
+            $adminHash = password_hash('admin123', PASSWORD_DEFAULT);
+            $clerkHash = password_hash('clerk123', PASSWORD_DEFAULT);
+            
+            $insertStmt = $pdo->prepare("INSERT INTO users (username, password, role, full_name, phone) VALUES (?, ?, ?, ?, ?)");
+            $insertStmt->execute(['admin', $adminHash, 'admin', 'System Admin', '0000000000']);
+            $insertStmt->execute(['clerk', $clerkHash, 'clerk', 'Farm Clerk', '0000000000']);
+        }
+    } catch (PDOException $e) {}
+
+    // Ensure columns exist in pigs table
+    try {
+        $pdo->query("SELECT source FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        try { $pdo->exec("ALTER TABLE pigs ADD COLUMN source VARCHAR(50) DEFAULT 'Born on Farm'"); } catch (PDOException $ex) {}
+    }
+
+    try {
+        $pdo->query("SELECT castrated FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        try {
+            $pdo->exec("ALTER TABLE pigs ADD COLUMN castrated TINYINT(1) DEFAULT 0");
+            $pdo->exec("ALTER TABLE pigs ADD COLUMN castration_date DATE NULL");
+        } catch (PDOException $ex) {}
+    }
+
+    try {
+        $pdo->query("SELECT purchase_price FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        try {
+            $pdo->exec("ALTER TABLE pigs ADD COLUMN purchase_price DECIMAL(10,2) NULL");
+            $pdo->exec("ALTER TABLE pigs ADD COLUMN vendor VARCHAR(255) NULL");
+        } catch (PDOException $ex) {}
+    }
+
+    try {
+        $pdo->query("SELECT acquisition_type FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        try { $pdo->exec("ALTER TABLE pigs ADD COLUMN acquisition_type VARCHAR(30) DEFAULT 'born'"); } catch (PDOException $ex) {}
+    }
+
+    try {
+        $pdo->query("SELECT last_known_stage FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        try { $pdo->exec("ALTER TABLE pigs ADD COLUMN last_known_stage VARCHAR(20) DEFAULT NULL"); } catch (PDOException $ex) {}
+    }
+
+    // Ensure columns exist in breeding_records table
+    try {
+        $pdo->query("SELECT weaning_date FROM breeding_records LIMIT 1");
+    } catch (PDOException $e) {
+        try {
+            $pdo->exec("ALTER TABLE breeding_records ADD COLUMN weaning_date DATE NULL");
+            $pdo->exec("ALTER TABLE breeding_records ADD COLUMN weaned_count INT NULL");
+        } catch (PDOException $ex) {}
+    }
+
+    // Ensure columns exist in users table
+    try {
+        $pdo->query("SELECT session_token FROM users LIMIT 1");
+    } catch (PDOException $e) {
+        try { $pdo->exec("ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL"); } catch (PDOException $ex) {}
     }
 
     // Convert tables to utf8mb4_unicode_ci

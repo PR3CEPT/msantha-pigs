@@ -96,6 +96,16 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    type VARCHAR(30) NOT NULL DEFAULT 'info',
+    title VARCHAR(120) NOT NULL,
+    message TEXT NOT NULL,
+    pig_id INT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insert default users (Password is 'admin123' and 'clerk123', hashed using bcrypt)
 -- You can also run the application once to auto-seed these users if they don't exist.
 
