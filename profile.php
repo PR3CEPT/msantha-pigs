@@ -61,6 +61,32 @@ include 'includes/header.php';
         <p>View and update your personal user account details.</p>
     </div>
 
+    <!-- Theme Preferences Card -->
+    <div class="card" style="max-width: 600px; margin: 0 auto 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div>
+                <h3 style="margin: 0; color: var(--primary-color);">🎨 Appearance &amp; Theme</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 2px 0 0;">Choose your preferred display mode (applies across all screens).</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;">
+            <label style="cursor: pointer; border: 2px solid var(--border-color); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; transition: all 0.2s ease;">
+                <input type="radio" name="theme_choice" value="light" style="margin-bottom: 2px;" onchange="if(window.migsSetTheme) window.migsSetTheme('light')">
+                <span style="font-size: 1.6rem;">☀️</span>
+                <strong style="font-size: 0.9rem;">Light Theme</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Clean bright daylight</span>
+            </label>
+
+            <label style="cursor: pointer; border: 2px solid var(--border-color); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; transition: all 0.2s ease;">
+                <input type="radio" name="theme_choice" value="dark" style="margin-bottom: 2px;" onchange="if(window.migsSetTheme) window.migsSetTheme('dark')">
+                <span style="font-size: 1.6rem;">🌙</span>
+                <strong style="font-size: 0.9rem;">Dark Theme</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Sleek contrast &amp; battery saver</span>
+            </label>
+        </div>
+    </div>
+
     <div class="card" style="max-width: 600px; margin: 0 auto;">
         <?php if ($msg): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($msg); ?></div>
@@ -120,11 +146,16 @@ include 'includes/header.php';
             if (input && icon) {
                 const isPassword = input.type === 'password';
                 input.type = isPassword ? 'text' : 'password';
-                icon.textContent = isPassword ? '🙈' : '👁️';
                 btn.title = isPassword ? 'Hide password' : 'Show password';
                 btn.setAttribute('aria-label', btn.title);
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentTheme = localStorage.getItem('migs_theme') || 'light';
+            const radio = document.querySelector('input[name="theme_choice"][value="' + currentTheme + '"]');
+            if (radio) radio.checked = true;
+        });
     </script>
 </div>
 

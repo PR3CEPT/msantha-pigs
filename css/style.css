@@ -3,12 +3,25 @@
     --secondary-color: #4CAF50;
     --accent-color: #FF7043; /* Earthy accent */
     --bg-color: #F4F7F6;
-    --card-bg: rgba(255, 255, 255, 0.85);
+    --card-bg: #FFFFFF;
     --text-main: #333333;
     --text-muted: #666666;
     --border-color: #E0E0E0;
     --sidebar-bg: #1B5E20;
     --sidebar-text: #FFFFFF;
+}
+
+[data-theme="dark"] {
+    --primary-color: #4CAF50;
+    --secondary-color: #81C784;
+    --accent-color: #FF8A65;
+    --bg-color: #121212;
+    --card-bg: #1E1E1E;
+    --text-main: #E5E7EB;
+    --text-muted: #9CA3AF;
+    --border-color: #2D3748;
+    --sidebar-bg: #0F2312;
+    --sidebar-text: #E8F5E9;
 }
 
 * {
@@ -2922,5 +2935,237 @@ select.form-control option {
         padding: 1.5rem 1.2rem !important;
     }
 }
+
+/* ==========================================================================
+   Dark Theme System Comprehensive Component Styles
+   ========================================================================== */
+[data-theme="dark"] body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .topbar {
+    background: #1E1E1E !important;
+    border-bottom: 1px solid #2D3748 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .brand-title {
+    color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .brand-slogan {
+    color: #9CA3AF !important;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .pig-hero-card,
+[data-theme="dark"] .pig-spec-card,
+[data-theme="dark"] .kpi-card,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .user-card-item,
+[data-theme="dark"] .breed-card,
+[data-theme="dark"] .user-mgmt-card {
+    background: #1E1E1E !important;
+    border-color: #2D3748 !important;
+    color: #E5E7EB !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .pig-hero-title,
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3, [data-theme="dark"] h4, [data-theme="dark"] h5, [data-theme="dark"] h6 {
+    color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .kpi-icon {
+    background: rgba(76, 175, 80, 0.18) !important;
+}
+
+[data-theme="dark"] .kpi-value {
+    color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .pig-hero-kpi-grid {
+    background: #181818 !important;
+    border-color: #2D3748 !important;
+}
+
+[data-theme="dark"] .pig-kpi-val {
+    color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .pig-kpi-label {
+    color: #9CA3AF !important;
+}
+
+[data-theme="dark"] .pig-spec-item {
+    background: #181818 !important;
+    border-color: #2D3748 !important;
+}
+
+[data-theme="dark"] .pig-spec-value {
+    color: #F3F4F6 !important;
+}
+
+[data-theme="dark"] .pig-spec-label {
+    color: #9CA3AF !important;
+}
+
+[data-theme="dark"] .pig-actions-bar {
+    border-top-color: #2D3748 !important;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: #262626 !important;
+    border-color: #404040 !important;
+    color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .form-control:focus {
+    border-color: #4CAF50 !important;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25) !important;
+}
+
+[data-theme="dark"] .form-group label {
+    color: #D1D5DB !important;
+}
+
+[data-theme="dark"] .table-wrapper {
+    border-color: #2D3748 !important;
+}
+
+[data-theme="dark"] .data-table {
+    color: #E5E7EB !important;
+}
+
+[data-theme="dark"] .data-table thead th {
+    background: #262626 !important;
+    color: #E5E7EB !important;
+    border-bottom: 2px solid #374151 !important;
+}
+
+[data-theme="dark"] .data-table td {
+    border-bottom: 1px solid #2D3748 !important;
+    color: #D1D5DB !important;
+}
+
+[data-theme="dark"] .data-table.striped tbody tr:nth-child(even) {
+    background: #181818 !important;
+}
+
+[data-theme="dark"] .data-table.striped tbody tr:hover {
+    background: #282828 !important;
+}
+
+[data-theme="dark"] .tbl-sub {
+    color: #9CA3AF !important;
+}
+
+[data-theme="dark"] .btn-outline {
+    border-color: #4CAF50 !important;
+    color: #81C784 !important;
+}
+
+[data-theme="dark"] .btn-outline:hover {
+    background: #4CAF50 !important;
+    color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .notif-dropdown {
+    background: #1E1E1E !important;
+    border-color: #333333 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .notif-header {
+    background: #262626 !important;
+    border-bottom: 1px solid #333333 !important;
+    color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .notif-item {
+    border-bottom-color: #2D3748 !important;
+    color: #E5E7EB !important;
+}
+
+[data-theme="dark"] .notif-item:hover {
+    background: #262626 !important;
+}
+
+[data-theme="dark"] .notif-item-unread {
+    background: rgba(76, 175, 80, 0.15) !important;
+}
+
+[data-theme="dark"] .notif-item-title {
+    color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .notif-item-msg {
+    color: #9CA3AF !important;
+}
+
+[data-theme="dark"] .notif-footer {
+    background: #262626 !important;
+    border-top: 1px solid #333333 !important;
+}
+
+[data-theme="dark"] .report-revenue-banner {
+    background: #132E16 !important;
+    border: 1px solid #1B5E20 !important;
+}
+
+[data-theme="dark"] .report-filter-card {
+    background: #1E1E1E !important;
+}
+
+/* Theme Toggle Button in Topbar */
+.theme-toggle-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    color: var(--text-main);
+    flex-shrink: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+    transform: scale(1.05);
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+    background: #262626;
+    border-color: #404040;
+    color: #FFD54F;
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover {
+    background: #333333;
+}
+
+/* Show sun in dark mode, moon in light mode */
+.theme-sun-icon { display: none; }
+.theme-moon-icon { display: inline-block; }
+
+[data-theme="dark"] .theme-sun-icon { display: inline-block; }
+[data-theme="dark"] .theme-moon-icon { display: none; }
+
 
 

@@ -29,6 +29,15 @@ if (isset($_SESSION['user_id'])) {
     <link rel="apple-touch-icon" href="images/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="images/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="images/icon-512.png">
+    <!-- Immediate Theme Initialization (Prevents FOUC) -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('migs_theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -61,6 +70,12 @@ if (isset($_SESSION['user_id'])) {
                     </div>
                 </div>
                 <div class="user-profile">
+                    <!-- ===== THEME TOGGLE BUTTON ===== -->
+                    <button class="theme-toggle-btn" id="themeToggleBtn" aria-label="Toggle Dark/Light Mode" title="Toggle Theme (Dark / Light)">
+                        <span class="theme-sun-icon">☀️</span>
+                        <span class="theme-moon-icon">🌙</span>
+                    </button>
+
                     <?php if (isset($_SESSION['user_id'])): ?>
 
                         <!-- ===== NOTIFICATION BELL ===== -->
@@ -219,4 +234,35 @@ if (isset($_SESSION['user_id'])) {
     });
     <?php endif; ?>
 })();
+
+// Global Dark / Light Theme Controller
+(function() {
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem('migs_theme', theme);
+        const radio = document.querySelector('input[name="theme_choice"][value="' + theme + '"]');
+        if (radio) radio.checked = true;
+    }
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            applyTheme(isDark ? 'light' : 'dark');
+        });
+    }
+
+    window.migsSetTheme = applyTheme;
+})();
+
+// Force Fresh Data Reload on Browser Back / Forward Navigation (Bfcache)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted || (window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType("navigation")[0] && window.performance.getEntriesByType("navigation")[0].type === "back_forward")) {
+        window.location.reload();
+    }
+});
 </script>
