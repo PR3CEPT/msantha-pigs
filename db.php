@@ -190,12 +190,17 @@ try {
         $pdo->exec("ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL");
     }
 
-    // Ensure 'purchase_price' and 'vendor' columns exist in pigs table
+    // Ensure 'purchase_price', 'vendor', and 'acquisition_type' columns exist in pigs table
     try {
         $pdo->query("SELECT purchase_price FROM pigs LIMIT 1");
     } catch (PDOException $e) {
         $pdo->exec("ALTER TABLE pigs ADD COLUMN purchase_price DECIMAL(10,2) NULL");
         $pdo->exec("ALTER TABLE pigs ADD COLUMN vendor VARCHAR(255) NULL");
+    }
+    try {
+        $pdo->query("SELECT acquisition_type FROM pigs LIMIT 1");
+    } catch (PDOException $e) {
+        $pdo->exec("ALTER TABLE pigs ADD COLUMN acquisition_type VARCHAR(30) DEFAULT 'born'");
     }
 
     // Ensure 'activity_logs' table exists
@@ -278,30 +283,45 @@ function logActivity($pdo, $action, $description, $userId = null, $username = nu
     }
 }
 
-// Authentication Check function (Single Session Enforcement)
+// Authentication Check function (Strict Single Active Session Enforcement)
 function requireLogin() {
     global $pdo;
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
     if (!isset($_SESSION['user_id'])) {
         header("Location: login.php");
         exit();
     }
 
-    // Validate single concurrent session per user
-    if (isset($_SESSION['session_token']) && isset($pdo)) {
+    // Always validate session_token against DB to prevent multiple concurrent logins
+    if (isset($pdo) && isset($_SESSION['user_id'])) {
         try {
             $stmt = $pdo->prepare("SELECT session_token FROM users WHERE id = ?");
             $stmt->execute([$_SESSION['user_id']]);
             $dbToken = $stmt->fetchColumn();
 
-            if ($dbToken !== false && $dbToken !== null && $dbToken !== '' && $dbToken !== $_SESSION['session_token']) {
-                // Session invalid: user logged in on another device or browser
-                session_unset();
-                session_destroy();
+            $currentSessionToken = $_SESSION['session_token'] ?? '';
+
+            // If session token is missing, or DB token is missing, or tokens mismatch (user logged in elsewhere)
+            if (empty($currentSessionToken) || empty($dbToken) || !hash_equals((string)$dbToken, (string)$currentSessionToken)) {
+                $_SESSION = [];
+                if (ini_get("session.use_cookies")) {
+                    $params = session_get_cookie_params();
+                    setcookie(session_name(), '', time() - 42000,
+                        $params["path"], $params["domain"],
+                        $params["secure"], $params["httponly"]
+                    );
+                }
+                if (session_status() === PHP_SESSION_ACTIVE) {
+                    session_destroy();
+                }
                 header("Location: login.php?error=concurrent_session");
                 exit();
             }
         } catch (Exception $e) {
-            // Fail open if transient DB issue during check
+            // Fail open only on transient DB connection failure
         }
     }
 }

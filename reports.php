@@ -84,6 +84,7 @@ $purchasesStmt->execute($salesParams);
 $totalPurchases = $purchasesStmt->fetchColumn() ?: 0;
 
 $totalRevenue = $totalLiveSales + $totalMeatSales;
+$totalSales = $totalRevenue;
 $netMargin = $totalRevenue - $totalPurchases;
 
 $salesListStmt = $pdo->prepare("SELECT * FROM sales WHERE " . implode(' AND ', $salesWhere) . " ORDER BY date DESC LIMIT 100");

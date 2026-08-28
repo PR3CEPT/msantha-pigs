@@ -191,6 +191,9 @@ CREATE TABLE `pigs` (
   `castrated` tinyint(1) DEFAULT 0,
   `castration_date` date DEFAULT NULL,
   `last_known_stage` varchar(20) DEFAULT NULL,
+  `purchase_price` decimal(10,2) DEFAULT NULL,
+  `vendor` varchar(255) DEFAULT NULL,
+  `acquisition_type` varchar(30) DEFAULT 'born',
   PRIMARY KEY (`id`),
   UNIQUE KEY `tag_no` (`tag_no`)
 ) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -202,7 +205,7 @@ CREATE TABLE `pigs` (
 
 LOCK TABLES `pigs` WRITE;
 /*!40000 ALTER TABLE `pigs` DISABLE KEYS */;
-INSERT INTO `pigs` VALUES (1,'MS007','Male','Large white','2024-10-30','','','active','adult','External Purchase',0,NULL,'adult'),(2,'MS011','Male','Large white','2025-09-05','MS007','','active','adult','Born on Farm',0,NULL,'adult'),(3,'MS017','Female','Large white','2025-11-05','MS007','','active','adult','Born on Farm',0,NULL,'adult'),(4,'HK2730','Female','DUROC','2025-08-25','','','active','adult','External Purchase',0,NULL,'adult'),(5,'722','Male','LANDRACE','2026-03-20','','','active','adult','External Purchase',1,'2026-05-05','finisher'),(6,'MS020','Female','Large white','2026-03-05','MS007','','active','adult','Born on Farm',0,NULL,'finisher'),(7,'MS009','Female','Large white','2025-11-05','MS007','','active','adult','Born on Farm',0,NULL,'adult'),(9,'MS051','Male','Large white','2026-05-15','MS007','','active','weaner','Born on Farm',0,NULL,'grower'),(10,'MS042','Male','Large white','2026-05-15','MS007','','active','weaner','Born on Farm',1,'2026-06-15','grower'),(11,'1249','Male','DUROC','2026-04-20','','','active','weaner','External Purchase',1,'2026-06-15','grower'),(12,'716','Male','Large white','2026-02-25','MS007','','active','piglet','Born on Farm',1,'2026-06-25','finisher');
+INSERT INTO `pigs` VALUES (1,'MS007','Male','Large white','2024-10-30','','','active','adult','External Purchase',0,NULL,'adult',NULL,NULL,'purchased'),(2,'MS011','Male','Large white','2025-09-05','MS007','','active','adult','Born on Farm',0,NULL,'adult',NULL,NULL,'born'),(3,'MS017','Female','Large white','2025-11-05','MS007','','active','adult','Born on Farm',0,NULL,'adult',NULL,NULL,'born'),(4,'HK2730','Female','DUROC','2025-08-25','','','active','adult','External Purchase',0,NULL,'adult',NULL,NULL,'purchased'),(5,'722','Male','LANDRACE','2026-03-20','','','active','adult','External Purchase',1,'2026-05-05','finisher',NULL,NULL,'purchased'),(6,'MS020','Female','Large white','2026-03-05','MS007','','active','adult','Born on Farm',0,NULL,'finisher',NULL,NULL,'born'),(7,'MS009','Female','Large white','2025-11-05','MS007','','active','adult','Born on Farm',0,NULL,'adult',NULL,NULL,'born'),(9,'MS051','Male','Large white','2026-05-15','MS007','','active','weaner','Born on Farm',0,NULL,'grower',NULL,NULL,'born'),(10,'MS042','Male','Large white','2026-05-15','MS007','','active','weaner','Born on Farm',1,'2026-06-15','grower',NULL,NULL,'born'),(11,'1249','Male','DUROC','2026-04-20','','','active','weaner','External Purchase',1,'2026-06-15','grower',NULL,NULL,'purchased'),(12,'716','Male','Large white','2026-02-25','MS007','','active','piglet','Born on Farm',1,'2026-06-25','finisher',NULL,NULL,'born');
 /*!40000 ALTER TABLE `pigs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -249,6 +252,7 @@ CREATE TABLE `users` (
   `role` varchar(20) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `full_name` varchar(100) DEFAULT NULL,
+  `session_token` varchar(64) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

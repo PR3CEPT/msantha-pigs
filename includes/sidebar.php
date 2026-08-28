@@ -10,7 +10,6 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <li><a href="dashboard.php" class="<?php echo $currentPage == 'dashboard.php' ? 'active' : ''; ?>">📊 Dashboard</a></li>
         <li><a href="pigs.php" class="<?php echo in_array($currentPage, ['pigs.php', 'pig_form.php', 'pig_view.php']) ? 'active' : ''; ?>">🐷 Pig Inventory</a></li>
         <li><a href="reports.php" class="<?php echo $currentPage == 'reports.php' ? 'active' : ''; ?>">📈 Farm Reports</a></li>
-        <li><a href="logs.php" class="<?php echo $currentPage == 'logs.php' ? 'active' : ''; ?>">📋 Activity Logs</a></li>
         <li>
             <a href="notifications.php" class="<?php echo $currentPage == 'notifications.php' ? 'active' : ''; ?>" style="display:flex; justify-content:space-between; align-items:center;">
                 <span>🔔 Notifications</span>
@@ -26,6 +25,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         </li>
         <li><a href="profile.php" class="<?php echo $currentPage == 'profile.php' ? 'active' : ''; ?>">👤 My Profile</a></li>
         <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+            <li><a href="logs.php" class="<?php echo $currentPage == 'logs.php' ? 'active' : ''; ?>">📋 Activity Logs</a></li>
             <li><a href="users.php" class="<?php echo $currentPage == 'users.php' ? 'active' : ''; ?>">⚙️ User Management</a></li>
         <?php endif; ?>
     </ul>

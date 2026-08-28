@@ -54,12 +54,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
             logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to Sold (Live Pig) (Buyer: $buyer, Amount: MWK " . number_format($price, 2) . ")");
         } else if ($status === 'sold_meat') {
             $meatWeight = !empty($_POST['meat_weight']) ? (float)$_POST['meat_weight'] : null;
-            $price = !empty($_POST['meat_price']) ? (float)$_POST['meat_price'] : 0;
+            $pricePerKg = !empty($_POST['meat_price_per_kg']) ? (float)$_POST['meat_price_per_kg'] : null;
+            $price = !empty($_POST['meat_price']) ? (float)$_POST['meat_price'] : ($meatWeight && $pricePerKg ? round($meatWeight * $pricePerKg, 2) : 0);
             $buyer = trim($_POST['meat_buyer'] ?? 'Cash Customer');
-            $remarks = trim($_POST['meat_remarks'] ?? 'Pork / Meat sale');
+            $meatRemarks = trim($_POST['meat_remarks'] ?? '');
+            
+            $fullRemarks = "Pork / Meat sale";
+            if ($meatWeight && $pricePerKg) {
+                $fullRemarks .= " (" . $meatWeight . " kg @ MWK " . number_format($pricePerKg, 2) . "/kg)";
+            }
+            if (!empty($meatRemarks)) {
+                $fullRemarks .= " | " . $meatRemarks;
+            }
+
             $pdo->prepare("INSERT INTO sales (type, reference_id, weight, date, amount, buyer_info, remarks) VALUES ('meat_sale', ?, ?, ?, ?, ?, ?)")
-                ->execute([$pig['tag_no'], $meatWeight, $date, $price, $buyer ?: 'Cash Customer', $remarks]);
-            $weightInfo = $meatWeight ? " (Weight: {$meatWeight} kg)" : "";
+                ->execute([$pig['tag_no'], $meatWeight, $date, $price, $buyer ?: 'Cash Customer', $fullRemarks]);
+            $weightInfo = $meatWeight ? " (Weight: {$meatWeight} kg @ MWK " . number_format($pricePerKg ?? 0, 2) . "/kg)" : "";
             logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to Sold for Meat$weightInfo (Buyer: $buyer, Amount: MWK " . number_format($price, 2) . ")");
         } else {
             logActivity($pdo, 'pig_status_changed', "Updated pig #{$pig['tag_no']} status to " . ucfirst(str_replace('_', ' ', $status)));
@@ -68,8 +78,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_status'])) {
         $pdo->commit();
         $msg = "Pig status updated successfully!";
         // Refresh pig info
+        $stmt = $pdo->prepare("SELECT *, 
+            TIMESTAMPDIFF(MONTH, dob, CURDATE()) as age_months, 
+            DATEDIFF(CURDATE(), dob) as age_days_calc
+            FROM pigs WHERE id = ?");
         $stmt->execute([$pigId]);
         $pig = $stmt->fetch();
+        $pig['stage'] = computePigStage($pig['dob']);
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
@@ -311,6 +326,32 @@ if (strtolower($pig['sex']) === 'female') {
     $breeding_records = $breeding->fetchAll();
 }
 
+// Fetch Sales/Transaction records for this pig (linked by tag_no)
+$salesStmt = $pdo->prepare("SELECT * FROM sales WHERE reference_id = ? ORDER BY date DESC");
+$salesStmt->execute([$pig['tag_no']]);
+$pig_sales = $salesStmt->fetchAll();
+
+// Handle Archive Pig (Pigs are preserved for audit & historical records, only archived)
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['archive_pig'])) {
+    $archiveReason = trim($_POST['archive_reason'] ?? 'Archived from active inventory');
+    try {
+        $stmt = $pdo->prepare("UPDATE pigs SET status = 'archived' WHERE id = ?");
+        $stmt->execute([$pigId]);
+        logActivity($pdo, 'pig_status_changed', "Archived pig #{$pig['tag_no']} (Reason: $archiveReason)");
+        $msg = "Pig #{$pig['tag_no']} has been safely archived (all historical records preserved).";
+        
+        $stmt = $pdo->prepare("SELECT *, 
+            TIMESTAMPDIFF(MONTH, dob, CURDATE()) as age_months, 
+            DATEDIFF(CURDATE(), dob) as age_days_calc
+            FROM pigs WHERE id = ?");
+        $stmt->execute([$pigId]);
+        $pig = $stmt->fetch();
+        $pig['stage'] = computePigStage($pig['dob']);
+    } catch (Exception $e) {
+        $error = "Failed to archive pig: " . $e->getMessage();
+    }
+}
+
 include 'includes/header.php';
 ?>
 
@@ -322,11 +363,21 @@ include 'includes/header.php';
             <p>Stage: <span style="text-transform: capitalize; font-weight: 600;"><?php echo htmlspecialchars($pig['stage']); ?></span> | Status: <span style="font-weight: 600; color: var(--primary-color);"><?php echo htmlspecialchars($pig['status']); ?></span></p>
         </div>
         <div class="pig-view-actions">
-            <button class="btn btn-warning" onclick="openModal('editPigModal')">✏️ Edit Details / Update Tag</button>
+            <button class="btn btn-warning" onclick="openModal('editPigModal')">✏️ Edit Details</button>
             <button class="btn btn-primary" onclick="openModal('growthModal')">+ Log Weight</button>
             <button class="btn btn-outline" onclick="openModal('vacModal')">+ Log Health</button>
             <?php if (strtolower($pig['sex']) === 'female'): ?>
                 <button class="btn btn-success" onclick="openModal('breedingModal')">+ Log Breeding</button>
+            <?php endif; ?>
+            <?php if ($pig['status'] !== 'archived'): ?>
+                <button class="btn btn-outline" onclick="openModal('archivePigModal')" style="border-color:#546E7A; color:#37474F;">📦 Archive Pig</button>
+            <?php else: ?>
+                <form action="pig_view.php?id=<?php echo $pigId; ?>" method="POST" style="display:inline;" onsubmit="return confirm('Reactivate this pig to Active inventory?');">
+                    <input type="hidden" name="update_status" value="1">
+                    <input type="hidden" name="status" value="active">
+                    <input type="hidden" name="date" value="<?php echo date('Y-m-d'); ?>">
+                    <button type="submit" class="btn btn-success">🔄 Reactivate Pig</button>
+                </form>
             <?php endif; ?>
             <a href="pigs.php" class="btn btn-outline">&larr; Back to List</a>
         </div>
@@ -458,6 +509,48 @@ include 'includes/header.php';
                     </tbody>
                 </table>
             </div>
+
+            <?php if (!empty($pig_sales)): ?>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
+            <h3 style="margin-bottom: 10px;">💳 Transaction / Sales History</h3>
+            <div class="table-wrapper" style="border: none; box-shadow: none;">
+            <table class="data-table striped" style="font-size: 0.88rem;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Transaction Type</th>
+                        <th>Weight</th>
+                        <th>Amount (MWK)</th>
+                        <th>Party</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($pig_sales as $ps): ?>
+                    <?php
+                        $pt = $ps['type'] ?? '';
+                        $ptLabel = match($pt) {
+                            'live_pig'                      => '🐖 Live Pig Sale',
+                            'meat_sale'                     => '🥩 Meat / Pork Sale',
+                            'purchase','pig_purchase',
+                            'external_purchase'             => '💰 External Purchase Cost',
+                            default                         => ucfirst(str_replace('_',' ',$pt))
+                        };
+                        $ptColor = in_array($pt, ['purchase','pig_purchase','external_purchase']) ? '#C62828' : 'var(--primary-color)';
+                    ?>
+                    <tr>
+                        <td><?php echo htmlspecialchars($ps['date']); ?></td>
+                        <td><strong style="color:<?php echo $ptColor; ?>"><?php echo $ptLabel; ?></strong></td>
+                        <td><?php echo !empty($ps['weight']) ? htmlspecialchars($ps['weight']).' kg' : '—'; ?></td>
+                        <td><strong style="color:<?php echo $ptColor; ?>">MWK <?php echo number_format((float)$ps['amount'], 2); ?></strong></td>
+                        <td><?php echo htmlspecialchars($ps['buyer_info'] ?: '—'); ?></td>
+                        <td><?php echo htmlspecialchars($ps['remarks'] ?: '—'); ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            </div>
+            <?php endif; ?>
             
             <?php if ($pig['status'] === 'active'): ?>
             <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-color);">
@@ -1123,6 +1216,26 @@ include 'includes/header.php';
         });
     }
 </script>
+<!-- ============================= ARCHIVE PIG MODAL ============================= -->
+<div id="archivePigModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content" style="max-width: 480px; border-top: 4px solid #546E7A;">
+        <h3 style="color: #37474F; margin-bottom: 6px;">📦 Archive Pig Record</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+            Archiving removes pig <strong>#<?php echo htmlspecialchars($pig['tag_no']); ?></strong> from active inventory while safely preserving all historical growth, health, breeding, and sales records for farm auditing.
+        </p>
+        <form action="pig_view.php?id=<?php echo $pigId; ?>" method="POST">
+            <input type="hidden" name="archive_pig" value="1">
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label for="archive_reason">Reason for Archiving</label>
+                <input type="text" id="archive_reason" name="archive_reason" class="form-control" placeholder="e.g. Transferred / Offsite / Culled / Retired" required>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn" style="background: #455A64; color: #fff; border-color: #455A64; flex: 1;">📦 Confirm Archive</button>
+                <button type="button" class="btn btn-outline" onclick="closeModal('archivePigModal')" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <?php include 'includes/footer.php'; ?>
 

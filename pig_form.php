@@ -36,8 +36,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $castrated = ($sex === 'Male' && isset($_POST['castrated']) && $_POST['castrated'] === '1') ? 1 : 0;
         $castration_date = ($castrated === 1 && !empty($_POST['castration_date'])) ? $_POST['castration_date'] : null;
 
-        $purchase_price = ($source === 'External Purchase' && !empty($_POST['purchase_price'])) ? (float)$_POST['purchase_price'] : null;
-        $vendor = ($source === 'External Purchase') ? trim($_POST['vendor'] ?? '') : null;
+        $acquisition_type = ($source === 'External Purchase') ? ($_POST['acquisition_type'] ?? 'purchased') : 'born';
+        $purchase_price = null;
+        $vendor = null;
+
+        if ($source === 'External Purchase') {
+            if ($acquisition_type === 'gift') {
+                $purchase_price = 0;
+                $vendor = trim($_POST['gift_donor'] ?? ($_POST['vendor'] ?? ''));
+            } else if ($acquisition_type === 'exchanged') {
+                $purchase_price = !empty($_POST['exchange_value']) ? (float)$_POST['exchange_value'] : null;
+                $vendor = trim($_POST['exchange_partner'] ?? ($_POST['vendor'] ?? ''));
+            } else {
+                // purchased
+                $acquisition_type = 'purchased';
+                $purchase_price = !empty($_POST['purchase_price']) ? (float)$_POST['purchase_price'] : null;
+                $vendor = trim($_POST['vendor'] ?? '');
+            }
+        }
 
         // VALIDATION 1: Castration date cannot be before Date of Birth
         if ($castrated === 1 && !empty($castration_date)) {
@@ -76,18 +92,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             try {
                 $pdo->beginTransaction();
-                $stmt = $pdo->prepare("INSERT INTO pigs (tag_no, sex, breed, dob, sire, dam, stage, source, castrated, castration_date, last_known_stage, purchase_price, vendor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$tag_no, $sex, $breed, $dob, $sire, $dam, $stage, $source, $castrated, $castration_date, $stage, $purchase_price, $vendor]);
+                $stmt = $pdo->prepare("INSERT INTO pigs (tag_no, sex, breed, dob, sire, dam, stage, source, castrated, castration_date, last_known_stage, purchase_price, vendor, acquisition_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$tag_no, $sex, $breed, $dob, $sire, $dam, $stage, $source, $castrated, $castration_date, $stage, $purchase_price, $vendor, $acquisition_type]);
 
-                // Record external purchase cost in sales/financial ledger
-                if ($source === 'External Purchase' && $purchase_price !== null && $purchase_price > 0) {
-                    $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('purchase', ?, ?, ?, ?, ?)")
-                        ->execute([$tag_no, $dob, $purchase_price, $vendor ?: 'External Supplier', 'External pig acquisition / bought cost']);
+                // Record external acquisition in sales/financial ledger
+                if ($source === 'External Purchase') {
+                    if ($acquisition_type === 'purchased' && $purchase_price !== null && $purchase_price > 0) {
+                        $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('purchase', ?, ?, ?, ?, ?)")
+                            ->execute([$tag_no, $dob, $purchase_price, $vendor ?: 'External Supplier', 'External pig acquisition / bought cost']);
+                    } else if ($acquisition_type === 'exchanged') {
+                        $pdo->prepare("INSERT INTO sales (type, reference_id, date, amount, buyer_info, remarks) VALUES ('purchase', ?, ?, ?, ?, ?)")
+                            ->execute([$tag_no, $dob, $purchase_price ?: 0, $vendor ?: 'Exchange Partner', 'External pig acquisition via barter/exchange']);
+                    }
                 }
 
                 $castNote = ($sex === 'Male') ? ($castrated ? " [Castrated Barrow]" : " [Intact Boar]") : "";
-                $priceNote = ($purchase_price !== null && $purchase_price > 0) ? " [Bought: MWK " . number_format($purchase_price, 2) . "]" : "";
-                logActivity($pdo, 'pig_created', "Registered single pig #$tag_no (Sex: $sex$castNote, Breed: $breed, Stage: " . ucfirst($stage) . ", Source: $source$priceNote)");
+                $acqNote = match($acquisition_type) {
+                    'gift'      => " [Free Gift / Donation from $vendor]",
+                    'exchanged' => " [Exchanged / Bartered: $vendor" . ($purchase_price ? " valued at MWK " . number_format($purchase_price, 2) : "") . "]",
+                    'purchased' => ($purchase_price !== null && $purchase_price > 0) ? " [Bought: MWK " . number_format($purchase_price, 2) . "]" : "",
+                    default     => ""
+                };
+                logActivity($pdo, 'pig_created', "Registered single pig #$tag_no (Sex: $sex$castNote, Breed: $breed, Stage: " . ucfirst($stage) . ", Source: $source$acqNote)");
                 $pdo->commit();
 
                 header("Location: pigs.php");
@@ -299,14 +325,53 @@ include 'includes/header.php';
 
                 <!-- Single External Purchase Group -->
                 <div id="singleExternalGroup" style="display: none; background: #E3F2FD; border: 1px solid #90CAF9; padding: 14px 16px; border-radius: 8px; margin-bottom: 1.2rem;">
-                    <label style="font-weight: 700; color: #1565C0; font-size: 0.95rem;">💰 Acquisition / Purchase Details</label>
-                    <div class="form-group" style="margin-top: 10px; margin-bottom: 8px;">
-                        <label for="purchase_price">Bought Amount / Purchase Price (MWK)</label>
-                        <input type="number" step="0.01" id="purchase_price" name="purchase_price" class="form-control" placeholder="e.g. 75000">
+                    <label style="font-weight: 700; color: #1565C0; font-size: 0.95rem;">📦 External Acquisition Details</label>
+
+                    <div class="form-group" style="margin-top: 10px; margin-bottom: 10px;">
+                        <label>How was this pig acquired?</label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px;">
+                            <label style="font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="acquisition_type" value="purchased" checked onchange="toggleAcqFields('single')"> 💰 Purchased / Bought
+                            </label>
+                            <label style="font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="acquisition_type" value="gift" onchange="toggleAcqFields('single')"> 🎁 Given Freely / Gift / Donation
+                            </label>
+                            <label style="font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="radio" name="acquisition_type" value="exchanged" onchange="toggleAcqFields('single')"> 🔄 Exchanged / Bartered
+                            </label>
+                        </div>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label for="vendor">Bought From / Vendor Info</label>
-                        <input type="text" id="vendor" name="vendor" class="form-control" placeholder="e.g. Liwonde Livestock Market / Farmer Phiri">
+
+                    <!-- Purchased fields -->
+                    <div id="singleAcqPurchased">
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label for="purchase_price">Purchase Price (MWK)</label>
+                            <input type="number" step="0.01" id="purchase_price" name="purchase_price" class="form-control" placeholder="e.g. 75000">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="vendor">Bought From / Supplier / Market</label>
+                            <input type="text" id="vendor" name="vendor" class="form-control" placeholder="e.g. Liwonde Livestock Market / Farmer Phiri">
+                        </div>
+                    </div>
+
+                    <!-- Gift / Free fields -->
+                    <div id="singleAcqGift" style="display:none;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="gift_donor">Donor / Giver Name (Optional)</label>
+                            <input type="text" id="gift_donor" name="gift_donor" class="form-control" placeholder="e.g. Charity Farm / Neighbour Banda">
+                        </div>
+                    </div>
+
+                    <!-- Exchanged / Barter fields -->
+                    <div id="singleAcqExchanged" style="display:none;">
+                        <div class="form-group" style="margin-bottom: 8px;">
+                            <label for="exchange_partner">Exchange Partner / Other Party</label>
+                            <input type="text" id="exchange_partner" name="exchange_partner" class="form-control" placeholder="e.g. Farmer Chikwanda">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="exchange_value">Agreed Exchange Value (MWK) <small style="color:var(--text-muted);">Optional — estimated fair value</small></label>
+                            <input type="number" step="0.01" id="exchange_value" name="exchange_value" class="form-control" placeholder="e.g. 60000">
+                        </div>
                     </div>
                 </div>
 
@@ -768,6 +833,19 @@ updateBatchTagHint();
 updateBatchTotal();
 updateCastrationMinDate('single');
 updateCastrationMinDate('batch');
+
+function toggleAcqFields(prefix) {
+    const val = document.querySelector(`input[name="acquisition_type"]:checked`);
+    if (!val) return;
+    const type = val.value;
+    const purchased = document.getElementById(prefix + 'AcqPurchased');
+    const gift = document.getElementById(prefix + 'AcqGift');
+    const exchanged = document.getElementById(prefix + 'AcqExchanged');
+    if (purchased) purchased.style.display = (type === 'purchased') ? 'block' : 'none';
+    if (gift) gift.style.display = (type === 'gift') ? 'block' : 'none';
+    if (exchanged) exchanged.style.display = (type === 'exchanged') ? 'block' : 'none';
+}
+
 </script>
 
 <?php include 'includes/footer.php'; ?>

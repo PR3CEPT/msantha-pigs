@@ -2,6 +2,11 @@
 require_once 'db.php';
 requireLogin();
 
+if (($_SESSION['user_role'] ?? '') !== 'admin') {
+    header("Location: dashboard.php?error=unauthorized");
+    exit();
+}
+
 // Filter parameters
 $actionGroup = $_GET['action_group'] ?? 'all';
 $selectedAction = $_GET['action'] ?? 'all';

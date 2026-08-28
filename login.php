@@ -1,15 +1,32 @@
 <?php
 require_once 'db.php';
 
-if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
-    exit();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// If already logged in, check whether session token is still valid
+if (isset($_SESSION['user_id']) && isset($pdo)) {
+    try {
+        $stmt = $pdo->prepare("SELECT session_token FROM users WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $dbToken = $stmt->fetchColumn();
+        $sessToken = $_SESSION['session_token'] ?? '';
+        if (!empty($dbToken) && !empty($sessToken) && hash_equals((string)$dbToken, (string)$sessToken)) {
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $_SESSION = [];
+        }
+    } catch (Exception $e) {
+        $_SESSION = [];
+    }
 }
 
 $error = null;
 
 if (isset($_GET['error']) && $_GET['error'] === 'concurrent_session') {
-    $error = "Your session was terminated because your account was logged in from another device or browser window.";
+    $error = "Your session was terminated because this account logged in from another device or browser.";
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
